@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -44,10 +43,12 @@ import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Course;
 import es.iesjandula.reaktor.timetable_server.models.Hour;
 import es.iesjandula.reaktor.timetable_server.models.InfoError;
+import es.iesjandula.reaktor.timetable_server.models.ProfesorDto;
 import es.iesjandula.reaktor.timetable_server.models.Rol;
 import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.Teacher;
 import es.iesjandula.reaktor.timetable_server.models.TeacherMoment;
+import es.iesjandula.reaktor.timetable_server.models.jpa.ProfesoresDto;
 import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
 import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
 import es.iesjandula.reaktor.timetable_server.models.parse.Asignaturas;
@@ -74,21 +75,24 @@ import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
 import es.iesjandula.reaktor.timetable_server.models.parse.TramosHorarios;
 import es.iesjandula.reaktor.timetable_server.repository.IAlumnoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.ICursosRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IProfesorDtoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaALumnoCursoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IVisitasServicioRepository;
+import es.iesjandula.reaktor.timetable_server.utils.Constants;
 import es.iesjandula.reaktor.timetable_server.utils.JPAOperations;
+import es.iesjandula.reaktor.timetable_server.utils.Parse;
 import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
 import es.iesjandula.reaktor.timetable_server.utils.TimeTableUtils;
+import es.iesjandula.reaktor.timetable_server.utils.Validations;
 import jakarta.servlet.http.HttpSession;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * @author David Martinez, Pablo Ruiz Canovas
  */
 @RestController
-@RequestMapping("/horarios")
-@Slf4j
+@Log4j2
 public class TimetableRest
 {
 	/** Attribute centroPdfs , used for get the info of PDFS */
@@ -131,6 +135,12 @@ public class TimetableRest
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad VisitasServicio */
 	@Autowired
 	private IVisitasServicioRepository visitasRepo;
+	
+	/**Repositorio que contiene todas las operaciones CRUD de la entidad dtoRepository */
+	@Autowired
+	private IProfesorDtoRepository dtoRepository;
+	
+	
 	
 	public TimetableRest()
 	{
@@ -3343,4 +3353,133 @@ public class TimetableRest
  			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
  		}
  	}
+ 	
+ 	/**
+	 * Endpoint para subir profesoresDto
+	 * 
+	 * @param csvFile Fichero csv a parsear
+	 * @param session Utilizado para guardar u obtener cosas en sesión
+	 * @return 200 Si todo ha ido bien
+	 */
+ 	@RequestMapping(method=RequestMethod.POST,value="/profesorDto",consumes="multipart/form-data")
+ 	public ResponseEntity<?> uploadProfesoresDto(@RequestParam(value="csv",required=true) MultipartFile csvFile, HttpSession session) {
+ 	    try {
+ 	        Parse parse = new Parse();
+ 	        
+ 	        // Parseamos el csv con el endpoint
+ 	        List<ProfesorDto> listaProfesoresDto = parse.parseProfesoresDto(csvFile);
+ 	        
+ 	        // Guardamos la lista en session
+ 	        session.setAttribute(Constants.SESION_LISTA_PROFESORESDTO, listaProfesoresDto);
+ 	        
+ 	        // Log de la lista de profesores
+ 	        log.info(listaProfesoresDto);
+ 	        
+ 	       
+ 	        JPAOperations jpa = new JPAOperations();
+ 	       // Insertar cada ProfesorDto en la base de datos
+ 	       for (ProfesorDto profesorDto : listaProfesoresDto) 
+ 	       {
+ 	    	    ProfesoresDto profesorDtoBD = jpa.toProfesorEntity(profesorDto);
+ 	    	    
+ 	    	    // Guardar en la base de datos
+ 	    	    dtoRepository.save(profesorDtoBD);
+ 	    	}
+
+ 	        
+ 	        // Devolvemos un 200 ya que todo ha ido bien
+ 	        return ResponseEntity.ok().build();
+ 	    }
+ 	    catch (HorariosError horarioException) 
+ 	    {
+ 	        return ResponseEntity.status(400).body(horarioException.getBodyExceptionMessage());
+ 	    }
+ 	    catch (Exception exception) 
+ 	    {
+ 	        HorariosError horarioException = 
+ 	                new HorariosError(Constants.ERR_GENERIC_EXCEPTION_CODE, 
+ 	                                  Constants.ERR_GENERIC_EXCEPTION_MSG + "uploadProfesoresDto",
+ 	                                  exception);
+ 	        
+ 	        log.error(Constants.ERR_GENERIC_EXCEPTION_MSG + "uploadProfesoresDto", horarioException);
+ 	        
+ 	        return ResponseEntity.status(500).body(horarioException.getBodyExceptionMessage());
+ 	    }
+ 	}
+
+	
+	 /**
+	 * Endpoint para obtener el profesorDto mediante el correo
+	 * @param correo correo del profesorDto que vamos a buscar
+	 * @param session utilizado para guardar u obtener cosas en sesión
+	 * @return el profesor que coincide con el correo
+	 */
+	@RequestMapping(method=RequestMethod.GET,value="/profesorDto")
+	public ResponseEntity<?> consultaProfesorDto(@RequestHeader(value="correo",required=true)String correo,HttpSession session)
+	{
+		try
+		{
+			Validations validations = new Validations();
+			// Creamos el objeto profesorDto
+			ProfesorDto profesorDto = null;
+			
+			// Obtenemos la lista de profesoresDto
+			List<ProfesorDto> listaProfesoresDto = validations.obtenerListaProfesoresDto(session);
+
+			profesorDto = validations.encontrarProfesorDto(correo, profesorDto, listaProfesoresDto);	
+			
+			// Pintamos en los logs en modo info
+			log.info(profesorDto);
+			
+			return ResponseEntity.ok(profesorDto);		
+		}
+		catch(HorariosError horarioException)
+		{
+			return ResponseEntity.status(400).body(horarioException.getBodyExceptionMessage());
+		}
+		catch(Exception exception)
+		{
+			HorariosError horarioException = 
+					new HorariosError(Constants.ERR_GENERIC_EXCEPTION_CODE, 
+										 Constants.ERR_GENERIC_EXCEPTION_MSG + "consultaProfesoresDto",
+										 exception);
+			log.error(Constants.ERR_GENERIC_EXCEPTION_MSG + "consultaProfesoresDto", horarioException);
+			return ResponseEntity.status(500).body(horarioException.getBodyExceptionMessage());
+		}
+	}
+	
+	/**
+	 * Endpoint paara obtener el listado de profesoresDto
+	 * @param session utilizado para guardar u obtener cosas en sesión
+	 * @return el profesor que coincide con el correo
+	 */
+	@RequestMapping(method=RequestMethod.GET,value="/profesoresDto")
+	public ResponseEntity<?> consultaProfesoresDto(HttpSession session)
+	{
+		try
+		{
+			Validations validations = new Validations();
+			
+			// Obtenemos la lista de profesoresDto
+			List<ProfesorDto> listaProfesoresDto = validations.obtenerListaProfesoresDto(session);
+			
+			// Pintamos en los logs en modo info
+			log.info(listaProfesoresDto);
+			
+			return ResponseEntity.ok(listaProfesoresDto);		
+		}
+		catch(HorariosError horarioException)
+		{
+			return ResponseEntity.status(400).body(horarioException.getBodyExceptionMessage());
+		}
+		catch(Exception exception)
+		{
+			HorariosError horarioException = 
+					new HorariosError(Constants.ERR_GENERIC_EXCEPTION_CODE, 
+										 Constants.ERR_GENERIC_EXCEPTION_MSG + "consultaProfesoresDto",
+										 exception);
+			log.error(Constants.ERR_GENERIC_EXCEPTION_MSG + "consultaProfesoresDto", horarioException);
+			return ResponseEntity.status(500).body(horarioException.getBodyExceptionMessage());
+		}
+	}
  }

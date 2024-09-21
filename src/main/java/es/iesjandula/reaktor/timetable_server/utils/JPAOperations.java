@@ -2,19 +2,19 @@ package es.iesjandula.reaktor.timetable_server.utils;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
+import es.iesjandula.reaktor.timetable_server.models.ProfesorDto;
 import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.jpa.Alumnos;
 import es.iesjandula.reaktor.timetable_server.models.jpa.Curso;
 import es.iesjandula.reaktor.timetable_server.models.jpa.CursoId;
+import es.iesjandula.reaktor.timetable_server.models.jpa.ProfesoresDto;
 import es.iesjandula.reaktor.timetable_server.models.jpa.PuntosConvivencia;
 import es.iesjandula.reaktor.timetable_server.models.jpa.PuntosConvivenciaAlumnoCurso;
 import es.iesjandula.reaktor.timetable_server.models.jpa.PuntosConvivenciaAlumnoCursoId;
@@ -22,6 +22,7 @@ import es.iesjandula.reaktor.timetable_server.models.jpa.VisitasServicio;
 import es.iesjandula.reaktor.timetable_server.models.jpa.VisitasServicioId;
 import es.iesjandula.reaktor.timetable_server.repository.IAlumnoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.ICursosRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IProfesorDtoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaALumnoCursoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IVisitasServicioRepository;
@@ -46,6 +47,9 @@ public class JPAOperations
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad VisitasServicio */
 	private IVisitasServicioRepository visitasRepo;
+	
+	/**Repositorio que contiene todas las operaciones CRUD de la entidad ProfesoresDto */
+	private IProfesorDtoRepository dtoRepository;
 	
 	/**Clase que gestiona las operaciones con fecha y hora */
 	private TimeOperations timeOperation;
@@ -554,4 +558,19 @@ public class JPAOperations
 		
 		return listaCompleta;
 	} 
+	/**
+	 * Metodo para guarda los profesores en base de datos
+	 * @param profesorDto Objeto profesor dto
+	 * @return el profesor
+	 */
+	public ProfesoresDto toProfesorEntity(ProfesorDto profesorDto) 
+	{
+	    return new ProfesoresDto(
+	        profesorDto.getNombre(),
+	        profesorDto.getApellidos(),
+	        profesorDto.getCorreo(),
+	        profesorDto.getTelefono()
+	    );
+	}
+
 }

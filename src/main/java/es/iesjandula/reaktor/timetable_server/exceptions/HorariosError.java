@@ -76,5 +76,22 @@ public class HorariosError extends Exception
 		
 		return map;
 	}
+	
+	/**
+	 * mapa para devolver la excepcion
+	 * @return mapa con mensaje, error y en caso de tener excepcion tambien devuelve la excepcion
+	 */
+	public Map<String,String> getBodyExceptionMessage()
+	{
+		Map<String,String> messageMap = new HashMap<String,String>();
+		messageMap.put("code", String.valueOf(code));
+		messageMap.put("text",text);
+		if(this.exception!=null)
+		{
+			String stackTrace = ExceptionUtils.getStackTrace(exception);
+			messageMap.put("exception", stackTrace);
+		}
+		return messageMap;
+	}
 
 }
