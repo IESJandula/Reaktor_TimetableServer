@@ -1,6 +1,5 @@
 package es.iesjandula.reaktor.timetable_server.utils;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
-import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
@@ -19,7 +17,6 @@ import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.ProfesorEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
-import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
 import es.iesjandula.reaktor.timetable_server.models.parse.AulaPlano;
 import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
@@ -43,7 +40,7 @@ public class TimeTableUtils
 	/**Logger de la clase */
 	private static Logger log = LogManager.getLogger();
 	
-	public List<ActitudePoints> loadPoints()
+	/*public List<ActitudePoints> loadPoints()
 	{
 		List<ActitudePoints> points = new LinkedList<ActitudePoints>();
 		
@@ -103,7 +100,7 @@ public class TimeTableUtils
 		points.add(new ActitudePoints(-75, "Agresion fisica a docentes o cualquier miembro de la comunidad educativa con agravante"));
 		
 		return points;
-	}
+	}*/
 	
 	public List<Aula> transformarAula(List<Aula> original)
 	{
@@ -364,9 +361,7 @@ public class TimeTableUtils
 	public List<ProfesorEntity> searchTeacherAulaNow( AulaEntity aula) throws HorariosError
 	{
 		List<ProfesorEntity> profesor = null;
-		//Identificador del profesor
-		LocalDateTime date = LocalDateTime.now();
-		String actualTime = date.getHour() + ":" + date.getMinute();
+
 		//Obtenemos el tramo actual
 		//TimeSlotEntity tramo = this.timeOperations.gettingTramoActual( actualTime);
 		

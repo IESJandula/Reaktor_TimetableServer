@@ -19,5 +19,11 @@ public interface IActitudePointsRepository extends JpaRepository<ActitudePointsE
     
  // Método para encontrar puntos por valor y descripción
     Optional<ActitudePoints> findByPointsAndDescription(int points, String description);
+
+    @Query("SELECT a.valor FROM PuntosConvivencia a")
+    List<Integer> findAllPuntosConvivenciaValores();
+    
+    @Query("SELECT a.descripcion FROM PuntosConvivencia a")
+    List<String> findAllPuntosConvivenciaDescripciones();
 	
 }

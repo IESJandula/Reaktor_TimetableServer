@@ -27,7 +27,7 @@ public class PuntosConvivencia
 	
 	/**Valor de los puntos que se restan/suman */
 	@Column(nullable = false)
-	private int valor;
+	private Integer valor;
 	
 	/**Descripcion de la sancion/recompensa */
 	@Column(nullable = false)

@@ -41,7 +41,6 @@ import org.xml.sax.SAXException;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
-import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Course;
 import es.iesjandula.reaktor.timetable_server.models.Hour;
@@ -71,19 +70,15 @@ import es.iesjandula.reaktor.timetable_server.models.parse.Profesor;
 import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
 import es.iesjandula.reaktor.timetable_server.repository.IActitudePointsRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IActividadRepository;
-import es.iesjandula.reaktor.timetable_server.repository.IAlumnoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IAsignaturaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IAulaPlanoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IAulaRepository;
-import es.iesjandula.reaktor.timetable_server.repository.ICursosRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IGrupoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IInfoErrorRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IProfesorRepository;
-import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaALumnoCursoRepository;
-import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
 import es.iesjandula.reaktor.timetable_server.repository.ITimeSlotRepository;
-import es.iesjandula.reaktor.timetable_server.repository.IVisitasServicioRepository;
+import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
 import es.iesjandula.reaktor.timetable_server.utils.JPAOperations;
 import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
 import es.iesjandula.reaktor.timetable_server.utils.TimeTableUtils;
@@ -124,34 +119,12 @@ public class TimetableRest
 	/** Lista de los planos de las aulas */
 	private List<AulaPlanoEntity> aulas;
 
-	/** Repositorio que contiene todas las operaciones CRUD de la entidad Alumnos */
-	@Autowired
-	private IAlumnoRepository alumnoRepo;
 
-	/** Repositorio que contiene todas las operaciones CRUD de la entidad Curso */
-	@Autowired
-	private ICursosRepository cursoRepo;
 
-	/**
-	 * Repositorio que contiene todas las operaciones CRUD de la entidad Puntos
-	 * convivencia
-	 */
-	@Autowired
-	private IPuntosConvivenciaRepository puntosRepo;
 
-	/**
-	 * Repositorio que contiene todas las operaciones CRUD de la entidad
-	 * PuntosConvivenciaAlumnosCurso
-	 */
-	@Autowired
-	private IPuntosConvivenciaALumnoCursoRepository sancionRepo;
 
-	/**
-	 * Repositorio que contiene todas las operaciones CRUD de la entidad
-	 * VisitasServicio
-	 */
-	@Autowired
-	private IVisitasServicioRepository visitasRepo;
+
+
 
 	// --------------------------- JAYDEE
 	@Autowired
@@ -2380,8 +2353,8 @@ public class TimetableRest
 								// --- HORARIO_GRUP EXISTS ---
 
 								// Getting the actual time
-								String actualTime = LocalDateTime.now().getHour() + ":"
-										+ LocalDateTime.now().getMinute();
+
+
 
 								TimeSlot tramoActual = null;
 
@@ -2931,8 +2904,17 @@ public class TimetableRest
 	{
 		try
 		{
-			List<ActitudePoints> listActitudePoints = this.iActitudePointsRepo.findAllActitudePoints();
+			List<Integer> valores = this.iActitudePointsRepo.findAllPuntosConvivenciaValores();
+			List<String> descripciones = this.iActitudePointsRepo.findAllPuntosConvivenciaDescripciones();
 
+
+			List<ActitudePoints> listActitudePoints = new ArrayList<>();
+
+
+			for (int i = 0; i < valores.size(); i++) {
+				listActitudePoints.add(new ActitudePoints(valores.get(i), descripciones.get(i)));
+			}
+			
 			// --CHECK IF THE LIST OF ACTITUDE POINTS IS NOT EMPTY--
 			if (!listActitudePoints.isEmpty())
 			{
@@ -3275,7 +3257,17 @@ public class TimetableRest
 
 			ActitudePoints points = new ActitudePoints(value, description);
 
-			List<ActitudePoints> puntos = this.util.loadPoints();
+			
+			List<Integer> valores = this.iActitudePointsRepo.findAllPuntosConvivenciaValores();
+			List<String> descripciones = this.iActitudePointsRepo.findAllPuntosConvivenciaDescripciones();
+
+
+			List<ActitudePoints> puntos = new ArrayList<>();
+
+
+			for (int i = 0; i < valores.size(); i++) {
+				puntos.add(new ActitudePoints(valores.get(i), descripciones.get(i)));
+			}
 
 			// Busqueda de puntos
 			if (!puntos.contains(points))
