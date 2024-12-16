@@ -31,4 +31,15 @@ public class AulaEntity
     @Column
     private String planta;
 
+	public AulaEntity(String numIntAu, String abreviatura, String nombre)
+	{
+		super();
+		this.numIntAu = numIntAu;
+		this.abreviatura = abreviatura;
+		this.nombre = nombre;
+	}
+
+
+    
+    
 }

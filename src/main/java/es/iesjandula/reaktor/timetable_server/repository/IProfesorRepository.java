@@ -28,4 +28,10 @@ public interface IProfesorRepository extends JpaRepository<ProfesorEntity, Strin
 	Optional<Profesor> findByNumIntPR(String numIntPR);
 	
     List<Profesor> findByNombreContainingIgnoreCase(String nombre);
+    
+    @Query("SELECT p " +
+    	   "FROM ActividadEntity ac join ac.profesor p " +
+    	   "WHERE ac.aula.numIntAu = :numAula and p.numIntPR = ac.profesor.numIntPR  ")
+	public List<ProfesorEntity> recuperaProfesorPorNumAula(@Param("numAula") String numAula);
+
 }

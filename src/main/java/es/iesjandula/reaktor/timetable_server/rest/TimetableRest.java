@@ -102,12 +102,14 @@ public class TimetableRest
 	private Centro centroPdfs;
 
 	/** Clase que se encarga de las operaciones logicas del servidor */
-	private TimeTableUtils util;
+	@Autowired
+	TimeTableUtils util;
 
 	/** Clase que se encarga de gestionar las operaciones con los estudiantes */
 	private StudentOperation studentOperation;
 
 	/** Clase que se encarga de manejar las operaciones con la base de datos */
+	@Autowired
 	private JPAOperations operations;
 
 	/** Lista de estudiantes cargados por csv */
@@ -179,7 +181,7 @@ public class TimetableRest
 
 	public TimetableRest()
 	{
-		this.util = new TimeTableUtils();
+
 		this.studentOperation = new StudentOperation();
 		this.students = new LinkedList<Student>();
 	}
@@ -1060,8 +1062,8 @@ public class TimetableRest
 				log.info(" - - - - Hora recuperada {}.", currentTime);
 
 				// TRAMO RELATIVO HORA ACTUAL
-				TimeSlot profTramo = null;
-				profTramo = this.gettingTramoActual(currentTime, profTramo);
+
+				TimeSlot profTramo = this.gettingTramoActual(currentTime);
 				
 				// Devuelve error si buscamos un profesor trabajando fuera de dias semanales.
 				if( profTramo == null ){
@@ -1302,13 +1304,12 @@ public class TimetableRest
 				if (grup != null)
 				{
 					// --- GRUPO EXIST , NOW GET THE ACUTAL TRAMO ---
-					TimeSlot acutalTramo = null;
 
 					// Getting the actual time
 					String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
 					log.info(actualTime);
 
-					acutalTramo = this.gettingTramoActual(actualTime, acutalTramo);
+					TimeSlot acutalTramo = this.gettingTramoActual(actualTime);
 
 					// --- CHECKING IF THE TRAMO ACTUAL EXISTS ---
 					if (acutalTramo != null)
@@ -2597,8 +2598,9 @@ public class TimetableRest
 	 * @param tramoActual
 	 * @return
 	 */
-	private TimeSlot gettingTramoActual(String actualTime, TimeSlot tramoActual)
+	private TimeSlot gettingTramoActual(String actualTime )
 	{
+		TimeSlot tramoActual = null;
 		// Recupera listado de tramos de BBDD
 		List<TimeSlot> tramosLista = timeslotRepo.recuperaListadoTramosHorarios();
 
@@ -3289,11 +3291,11 @@ public class TimetableRest
 		{
 			Map<String, Object> infoAula = new HashMap<String, Object>();
 			// recibe por parametro
-			Aula aula = new Aula(numIntAu, abreviatura, nombre);
+			AulaEntity aula = new AulaEntity(numIntAu, abreviatura, nombre);
 
 			// Buscamos el aula
 			// recuperar aulas
-			List<Aula> aulas = this.centroPdfs.getDatos().getAulas().getAula(); 
+			List<AulaEntity> aulas = this.aulaRepo.findAll(); 
 
 			if (!aulas.contains(aula))
 			{
@@ -3301,22 +3303,22 @@ public class TimetableRest
 			}
 
 			// Obtenemos el profesor que se encuentra actualmente en el aula
-			Profesor profesor = this.util.searchTeacherAulaNow(this.centroPdfs, aula);
+			List<ProfesorEntity> profesor = this.util.searchTeacherAulaNow(aula);
 			// Obtenemos la asignatura que se imparte actualmente en el aula
-			Map<String, Object> asignaturaActividad = this.util.searchSubjectAulaNow(centroPdfs, profesor);
-			// Sacamos la asignatura del mapa
-			Asignatura asignatura = (Asignatura) asignaturaActividad.get("asignatura");
-			// Sacamos la actividad del mapa
-			Actividad actividad = (Actividad) asignaturaActividad.get("actividad");
+
+			List<AsignaturaEntity> asignatura = this.util.searchSubjectAulaNow( aula);
+
 			// Sacamos el grupo que se encuentra en el aula
-			List<Grupo> grupos = this.util.searchGroupAulaNow(centroPdfs, actividad);
+			List<GrupoEntity> grupos = this.util.searchGroupAulaNow(aula);
+			
 			// Sacamos los alumnos que se encuentran en el aula
-			List<Student> alumnos = this.util.getAlumnosAulaNow(grupos, this.students);
+			//List<Student> alumnos = this.util.getAlumnosAulaNow(grupos, this.students);
 
 			infoAula.put("profesor", profesor);
 			infoAula.put("asignatura", asignatura);
 			infoAula.put("grupo", grupos);
-			infoAula.put("alumnos", alumnos);
+			
+			//infoAula.put("alumnos", alumnos);
 
 			return ResponseEntity.ok().body(infoAula);
 		}

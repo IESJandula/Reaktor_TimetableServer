@@ -2,15 +2,23 @@ package es.iesjandula.reaktor.timetable_server.utils;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import es.iesjandula.reaktor.timetable_server.models.parse.Centro;
-import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
+import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
+import es.iesjandula.reaktor.timetable_server.repository.ITimeSlotRepository;
 
+@Service
 public class TimeOperations 
 {
+	
+	@Autowired
+	ITimeSlotRepository timeslotRepo;
+	
 	/**Logger de la clase */
 	private static Logger log = LogManager.getLogger();
 	
@@ -22,12 +30,23 @@ public class TimeOperations
 	 * @param tramoActual
 	 * @return tramo actual
 	 */
-	public TimeSlot gettingTramoActual(Centro centro, String actualTime)
+	/**
+	 * Method gettingTramoActual
+	 *
+	 * @param centro
+	 * @param actualTime
+	 * @param tramoActual
+	 * @return
+	 */
+	public TimeSlotEntity gettingTramoActual(String actualTime )
 	{
-		TimeSlot tramoActual = null;
-		
-		for (TimeSlot tramo : centro.getDatos().getTramosHorarios().getTramo())
+		TimeSlotEntity tramoActual = null;
+		// Recupera listado de tramos de BBDD
+		List<TimeSlotEntity> tramosLista = this.timeslotRepo.recuperaListadoTramosHorariosEntity();
+
+		for (TimeSlotEntity tramo : tramosLista)
 		{
+
 			// --- GETTING THE HORA,MINUTO , INICIO AND FIN ---
 			int horaInicio = Integer.parseInt(tramo.getStartHour().split(":")[0].trim());
 			int minutoInicio = Integer.parseInt(tramo.getStartHour().split(":")[1].trim());
@@ -81,6 +100,7 @@ public class TimeOperations
 						// --- SETTING THE VALUE OF TRAMO INTO PROF TRAMO ---
 						log.info("ENCONTRADO -> " + tramo);
 						tramoActual = tramo;
+
 					}
 				}
 			}

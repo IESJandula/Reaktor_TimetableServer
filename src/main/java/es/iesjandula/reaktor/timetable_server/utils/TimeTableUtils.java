@@ -2,38 +2,44 @@ package es.iesjandula.reaktor.timetable_server.utils;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Student;
+import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.ProfesorEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
-import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
-import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
+import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
 import es.iesjandula.reaktor.timetable_server.models.parse.AulaPlano;
-import es.iesjandula.reaktor.timetable_server.models.parse.Centro;
 import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
-import es.iesjandula.reaktor.timetable_server.models.parse.GruposActividad;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorarioAula;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorarioProf;
-import es.iesjandula.reaktor.timetable_server.models.parse.Profesor;
-import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
 import es.iesjandula.reaktor.timetable_server.repository.IAsignaturaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IGrupoRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IProfesorRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
 
+@Service
 public class TimeTableUtils 
 {
+	@Autowired
+	TimeOperations timeOperations;
+	
+	@Autowired
+	IProfesorRepository iprofesorRepository;
+	
+	@Autowired
+	IAsignaturaRepository iAsignaturaRepository;
+	
 	/**Logger de la clase */
 	private static Logger log = LogManager.getLogger();
 	
@@ -355,68 +361,25 @@ public class TimeTableUtils
 	 * @return profesor encontrado
 	 * @throws HorariosError
 	 */
-	public Profesor searchTeacherAulaNow(Centro centro, Aula aula) throws HorariosError
+	public List<ProfesorEntity> searchTeacherAulaNow( AulaEntity aula) throws HorariosError
 	{
-		Profesor profesor = null;
+		List<ProfesorEntity> profesor = null;
 		//Identificador del profesor
-		String numeroProfesor = "";
-		TimeOperations timeOp = new TimeOperations();
 		LocalDateTime date = LocalDateTime.now();
 		String actualTime = date.getHour() + ":" + date.getMinute();
 		//Obtenemos el tramo actual
-		TimeSlot tramo = timeOp.gettingTramoActual(centro, actualTime);
+		//TimeSlotEntity tramo = this.timeOperations.gettingTramoActual( actualTime);
 		
-		if(tramo != null)
-		{
-			//Obtenemos la lista de horarios de las aulas
-			List<HorarioAula> horarioAulas = centro.getHorarios().getHorariosAulas().getHorarioAula();
+		//if(tramo != null)
+		//{
+			profesor= this.iprofesorRepository.recuperaProfesorPorNumAula(aula.getNumIntAu());
 			
-			for(HorarioAula horario:horarioAulas)
-			{
-				//Buscamos el aula en el horario
-				if(horario.getHorNumIntAu().equals(aula.getNumIntAu()))
-				{
-					//Recorremos las actividades con el aula encontrada
-					for(Actividad act:horario.getActividad())
-					{
-						//Si el tramo del aula encontrada coincide con el tramo actual recogemos el
-						//numero del profesor
-						if(act.getTramo().equalsIgnoreCase(tramo.getNumTr().trim()))
-						{
-							numeroProfesor = act.getProfesor();
-							break;
-						}
-					}
-				}
-			}
 			
-			if(!numeroProfesor.isEmpty())
-			{
-				int index = 0;
-				boolean out = false;
-				List<Profesor> profesores = centro.getDatos().getProfesores().getProfesor();
-				
-				//Buscamos el profesor por su numero
-				while(index<profesores.size() && !out)
-				{
-					Profesor profe = profesores.get(index);
-					if(profe.getNumIntPR().equalsIgnoreCase(numeroProfesor))
-					{
-						profesor = profe;
-						out = true;
-					}
-					index++;
-				}
-			}
-			else
-			{
-				throw new HorariosError(404,"No se ha podido encontrar el profesor en este momento actual");
-			}
-		}
-		else
-		{
-			throw new HorariosError(406,"Se esta buscando un horario fuera dfel horario de trabajo del centro");
-		}
+		//}
+		//else
+		//{
+		//	throw new HorariosError(406,"Se esta buscando un horario fuera dfel horario de trabajo del centro");
+		//}
 		
 		return profesor;
 		
@@ -431,54 +394,32 @@ public class TimeTableUtils
 	 * @throws HorariosError
 	 */
 
-	@Autowired
-	private IAsignaturaRepository asignaturaRepo;
+
 	
-	public Map<String, Object> searchSubjectAulaNow(Centro centro, Profesor profesor) throws HorariosError {
-	    Map<String, Object> asignaturaActividad = new HashMap<>();
-	    Asignatura asignatura = null;
-	    String numeroAsignatura = "";
-	    TimeOperations timeOp = new TimeOperations();
-	    LocalDateTime date = LocalDateTime.now();
-	    String actualTime = date.getHour() + ":" + date.getMinute();
+	public List<AsignaturaEntity> searchSubjectAulaNow(AulaEntity aula) throws HorariosError 
+	{
+		List<AsignaturaEntity> asignatura = null;
+		//Identificador del profesor
 
-	    // Obtener el tramo actual
-	    TimeSlot tramo = timeOp.gettingTramoActual(centro, actualTime);
-	    
-	    if (tramo != null) {
-	        List<HorarioProf> horarioProfesor = centro.getHorarios().getHorariosProfesores().getHorarioProf();
-	        
-	        // Buscar el horario del profesor en la base de datos
-	        for (HorarioProf horario : horarioProfesor) {
-	            if (horario.getHorNumIntPR().equalsIgnoreCase(profesor.getNumIntPR().trim())) {
-	                // Buscar la actividad actual
-	                for (Actividad act : horario.getActividad()) {
-	                    if (act.getTramo().trim().equalsIgnoreCase(tramo.getNumTr().trim())) {
-	                        numeroAsignatura = act.getAsignatura();
-	                        asignaturaActividad.put("actividad", act);
-	                        break;
-	                    }
-	                }
-	            }
-	        }
 
-	        if (!numeroAsignatura.isEmpty()) {
-	            // Buscar la asignatura en la base de datos en lugar de la sesión
-	            asignatura = asignaturaRepo.findByNumIntAs(numeroAsignatura).orElseThrow(() -> new HorariosError(404, "Asignatura no encontrada en la base de datos"));
-
-	            asignaturaActividad.put("asignatura", asignatura);
-	        } else {
-	            throw new HorariosError(404, "No se ha podido encontrar la asignatura en este momento actual");
-	        }
-	    } else {
-	        throw new HorariosError(406, "Se está buscando un horario fuera del horario de trabajo del centro");
-	    }
-
-	    if (asignaturaActividad.size() <= 1) {
-	        throw new HorariosError(400, "El conjunto está incompleto, falta una asignatura o actividad por recoger");
-	    }
-
-	    return asignaturaActividad;
+		//LocalDateTime date = LocalDateTime.now();
+		//String actualTime = date.getHour() + ":" + date.getMinute();
+		//Obtenemos el tramo actual
+		//TimeSlotEntity tramo = this.timeOperations.gettingTramoActual( actualTime);
+		
+		//if(tramo != null)
+		//{
+			asignatura= iAsignaturaRepository.recuperaAsignaturaPorNumAula(aula.getNumIntAu());
+			
+			
+		//}
+		//else
+		//{
+		//	throw new HorariosError(406,"Se esta buscando un horario fuera dfel horario de trabajo del centro");
+		//}
+		
+		return asignatura;
+		
 	}
 	
 	/**
@@ -491,52 +432,17 @@ public class TimeTableUtils
 	 */
 
 	@Autowired
-	private IGrupoRepository iGrupoRepo;
-	public List<Grupo> searchGroupAulaNow(Centro centro,Actividad actividad)
+	private IGrupoRepository iGrupoRepository;
+	public List<GrupoEntity> searchGroupAulaNow(AulaEntity aula)
 	{
-		List<Grupo> grupos = new LinkedList<Grupo>();
-		List<String> numeroGrupo = new LinkedList<String>();
-		
-		//Recogemos los grupos que participan en la actividad
-		GruposActividad numGrupos = actividad.getGruposActividad();
-		
-		//Recogemos el numero de grupo comparandolo con sus valores
-		if(numGrupos.getGrupo1()!=null)
-		{
-			numeroGrupo.add(numGrupos.getGrupo1());
-		}
-		if(numGrupos.getGrupo2()!=null)
-		{
-			numeroGrupo.add(numGrupos.getGrupo2());
-		}
-		if(numGrupos.getGrupo3()!=null)
-		{
-			numeroGrupo.add(numGrupos.getGrupo3());
-		}
-		if(numGrupos.getGrupo4()!=null)
-		{
-			numeroGrupo.add(numGrupos.getGrupo4());
-		}
-		if(numGrupos.getGrupo5()!=null)
-		{
-			numeroGrupo.add(numGrupos.getGrupo5());
-		}
+
 		
 		//Obtenemos todos los grupos guardado en base este metodo esta en el repositorio
-		 List<Grupo> listaGrupos = iGrupoRepo.findAllByNumIntGrIn(numeroGrupo);
+		 List<GrupoEntity> listaGrupos = iGrupoRepository.recuperaGruposPorNumAula(aula.getNumIntAu());
 		
-		for(Grupo item:listaGrupos)
-		{
-			for(String id:numeroGrupo)
-			{
-				if(item.getNumIntGr().equals(id))
-				{
-					grupos.add(item);
-				}
-			}
-		}
 		
-		return grupos;
+		
+		return listaGrupos;
 	}
 	
 	/**

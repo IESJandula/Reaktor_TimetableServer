@@ -17,6 +17,9 @@ public interface ITimeSlotRepository extends JpaRepository<TimeSlotEntity, Strin
 	 @Query( "SELECT new es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot(t) FROM TimeSlotEntity t" )
 	 public List<TimeSlot> recuperaListadoTramosHorarios();
 	 
+	 @Query( "SELECT new es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity(t) FROM TimeSlotEntity t" )
+	 public List<TimeSlotEntity> recuperaListadoTramosHorariosEntity();
+	 
 	 public List<TimeSlotEntity> findByDayNumber( String daynumber );
 	
 	 public  Optional<TimeSlot> findByNumTr(String numTr);
@@ -24,4 +27,5 @@ public interface ITimeSlotRepository extends JpaRepository<TimeSlotEntity, Strin
 	 // Busca los tramos horarios (TimeSlot) cuyo horario de inicio es antes del valor proporcionado
 	 // y cuyo horario de fin es después del valor proporcionado.
 	 List<TimeSlot> findByStartHourBeforeAndEndHourAfter(String start, String end);
+
 }

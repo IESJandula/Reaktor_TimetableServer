@@ -4,8 +4,10 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
 
@@ -24,4 +26,9 @@ public interface IGrupoRepository extends JpaRepository<GrupoEntity, String>
 	
     
     List<Grupo> findAllByNumIntGrIn(List<String> numIntGr);
+    
+    @Query("SELECT g "
+    		+ "FROM ActividadEntity ac join ac.grupo g "
+    		+ "where ac.aula.numIntAu = :numAula and g.numIntGr = ac.grupo.numIntGr")
+	public List<GrupoEntity> recuperaGruposPorNumAula(@Param("numAula")String numAula);
 }
