@@ -41,7 +41,7 @@ import org.xml.sax.SAXException;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
-import es.iesjandula.reaktor.timetable_server.models.ApplicationPdf;
+import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Course;
 import es.iesjandula.reaktor.timetable_server.models.Hour;
@@ -99,11 +99,15 @@ import lombok.extern.slf4j.Slf4j;
 public class TimetableRest
 {
 	/** Attribute centroPdfs , used for get the info of PDFS */
-	private Centro centroPdfs;
+	//private Centro centroPdfs;
 
 	/** Clase que se encarga de las operaciones logicas del servidor */
 	@Autowired
 	TimeTableUtils util;
+	
+	@Autowired
+	ApplicationPdf applicationPdf;
+
 
 	/** Clase que se encarga de gestionar las operaciones con los estudiantes */
 	private StudentOperation studentOperation;
@@ -111,9 +115,14 @@ public class TimetableRest
 	/** Clase que se encarga de manejar las operaciones con la base de datos */
 	@Autowired
 	private JPAOperations operations;
+	
+	@Autowired
+	private IStudentsRepository iStudentsRepository;
 
 	/** Lista de estudiantes cargados por csv */
 	private List<Student> students;
+	
+	private List<StudentsEntity> studentsEntity;
 
 	/** Lista de los planos de las aulas */
 	private List<AulaPlanoEntity> aulas;
@@ -1925,9 +1934,7 @@ public class TimetableRest
 			if (!name.trim().isBlank() && !name.trim().isEmpty() && !lastname.trim().isBlank()
 					&& !lastname.trim().isEmpty())
 			{
-				if (this.centroPdfs != null)
-				{
-					Centro centro = this.centroPdfs;
+
 
 					// --- GETTING THE PROFESSOR AND CHECK IF EXISTS ---
 					if (lastname.split(" ").length < 2)
@@ -1941,8 +1948,8 @@ public class TimetableRest
 					String profFirstLastName = lastname.trim().split(" ")[0];
 					String profSecondLastName = lastname.trim().split(" ")[1];
 
-					Profesor profesor = null;
-					for (Profesor prof : centro.getDatos().getProfesores().getProfesor())
+					ProfesorEntity profesor = null;
+					for (ProfesorEntity prof : this.profesorRepo.findAll())
 					{
 						if (prof.getNombre().trim().equalsIgnoreCase(name.trim())
 								&& prof.getPrimerApellido().trim().equalsIgnoreCase(profFirstLastName)
@@ -1958,7 +1965,10 @@ public class TimetableRest
 					{
 						// --- PROFESOR EXISTS ---
 						HorarioProf horarioProfesor = null;
-						for (HorarioProf horarioProf : centro.getHorarios().getHorariosProfesores().getHorarioProf())
+						List<HorarioProf> horarioProfList = new ArrayList<>();
+						fillHorarioProfValues(horarioProfList);
+						
+						for (HorarioProf horarioProf : horarioProfList)
 						{
 							if (horarioProf.getHorNumIntPR().trim().equalsIgnoreCase(profesor.getNumIntPR().trim()))
 							{
@@ -1978,7 +1988,7 @@ public class TimetableRest
 							// ACTIVIDADES OF THIS DAY (LIST ACTIVIDAD) ---
 							for (Actividad actividad : horarioProfesor.getActividad())
 							{
-								TimeSlot tramo = this.extractTramoFromCentroActividad(centro, actividad);
+								TimeSlotEntity tramo = this.extractTramoFromCentroActividad( actividad);
 
 								// --- CHECKING IF THE TRAMO DAY EXISTS ---
 								if (!profesorMap.containsKey(tramo.getDayNumber().trim()))
@@ -2001,11 +2011,11 @@ public class TimetableRest
 							}
 
 							// --- CALLING TO APPLICATION PDF , TO GENERATE PDF ---
-							ApplicationPdf pdf = new ApplicationPdf();
+
 							try
 							{
 								// -- CALLING TO THE METHOD GET INFO PDF OF APLICATION PDF TO CREATE THE PDF ---
-								pdf.getInfoPdf(centro, profesorMap, profesor);
+								applicationPdf.getInfoPdf( profesorMap, profesor);
 
 								// --- GETTING THE PDF BY NAME URL ---
 								File file = new File(
@@ -2074,18 +2084,6 @@ public class TimetableRest
 						return ResponseEntity.status(400).body(horariosError);
 					}
 
-				}
-				else
-				{
-					// --- ERROR ---
-					String error = "ERROR centroPdfs NULL OR NOT FOUND";
-
-					log.info(error);
-
-					HorariosError horariosError = new HorariosError(400, error, null);
-					log.info(error, horariosError);
-					return ResponseEntity.status(400).body(horariosError);
-				}
 			} else
 			{
 				// --- ERROR ---
@@ -2116,9 +2114,9 @@ public class TimetableRest
 	 * @param tramo
 	 * @return
 	 */
-	private TimeSlot extractTramoFromCentroActividad(Centro centro, Actividad actividad)
+	private TimeSlotEntity extractTramoFromCentroActividad( Actividad actividad)
 	{
-		for (TimeSlot tram : centro.getDatos().getTramosHorarios().getTramo())
+		for (TimeSlotEntity tram : this.timeslotRepo.findAll())
 		{
 			// --- GETTING THE TRAMO ---
 			if (actividad.getTramo().trim().equalsIgnoreCase(tram.getNumTr().trim()))
@@ -2146,12 +2144,10 @@ public class TimetableRest
 			// --- CHEKING THE GRUPO ---
 			if ((grupo != null) && !grupo.trim().isBlank() && !grupo.trim().isEmpty())
 			{
-				// --- CHECKING IF THE PDF CENTRO IS NULL ---
-				if (this.centroPdfs != null)
-				{
+				
 					// --- CHEKING IF GRUPO EXISTS ---
-					Grupo grupoFinal = null;
-					for (Grupo grup : this.centroPdfs.getDatos().getGrupos().getGrupo())
+					GrupoEntity grupoFinal = null;
+					for (GrupoEntity grup : this.grupoRepo.findAll())
 					{
 						// --- RAPLACING "SPACE", " º " AND " - " FOR EMPTY , THT IS FOR GET MORE
 						// SPECIFIC DATA ---
@@ -2173,8 +2169,9 @@ public class TimetableRest
 
 						// -- CHEKING HORARIO_GRUP FROM GRUPO_FINAL ---
 						HorarioGrup horarioGrup = null;
-						for (HorarioGrup horarioGrp : this.centroPdfs.getHorarios().getHorariosGrupos()
-								.getHorarioGrup())
+						List<HorarioGrup> horarioGrupList = new ArrayList<>();
+						fillHorarioGrupoValues(horarioGrupList);
+						for (HorarioGrup horarioGrp : horarioGrupList)
 						{
 							// -- GETTING THE HORARIO_GRUP OF THE GRUP ---
 							if (horarioGrp.getHorNumIntGr().trim().equalsIgnoreCase(grupoFinal.getNumIntGr().trim()))
@@ -2199,7 +2196,7 @@ public class TimetableRest
 								for (Actividad actv : actividadList)
 								{
 									// --- GET THE TRAMO ---
-									TimeSlot tramo = this.extractTramoFromCentroActividad(this.centroPdfs, actv);
+									TimeSlotEntity tramo = this.extractTramoFromCentroActividad( actv);
 
 									// --- IF THE MAP NOT CONTAINS THE TRAMO DAY NUMBER , ADD THE DAY NUMBER AND THE
 									// ACTIVIDAD LIST ---
@@ -2228,8 +2225,7 @@ public class TimetableRest
 
 									try
 									{
-										ApplicationPdf applicationPdf = new ApplicationPdf();
-										applicationPdf.getInfoPdfHorarioGrupoCentro(this.centroPdfs, grupoMap,
+										applicationPdf.getInfoPdfHorarioGrupoCentro( grupoMap,
 												grupo.trim());
 
 										// --- GETTING THE PDF BY NAME URL ---
@@ -2310,18 +2306,7 @@ public class TimetableRest
 						log.info(error, horariosError);
 						return ResponseEntity.status(400).body(horariosError);
 					}
-				}
-				else
-				{
-					// --- ERROR ---
-					String error = "ERROR CENTRO_PDFS NULL OR NOT FOUND";
-
-					log.info(error);
-
-					HorariosError horariosError = new HorariosError(400, error, null);
-					log.info(error, horariosError);
-					return ResponseEntity.status(400).body(horariosError);
-				}
+				
 			}
 			else
 			{
@@ -2678,32 +2663,32 @@ public class TimetableRest
 	{
 		try
 		{
-			Map<Profesor, Map<String, List<Actividad>>> mapProfesors = new HashMap<>();
-			if (this.centroPdfs != null)
-			{
+			Map<ProfesorEntity, Map<String, List<Actividad>>> mapProfesors = new HashMap<>();
+
 				// --- CENTRO PDF IS LOADED---
-				for (Profesor profesor : this.centroPdfs.getDatos().getProfesores().getProfesor())
+				for (ProfesorEntity profesor : this.profesorRepo.findAll())
 				{
 					// --- FOR EACH PROFESOR ---
-					HorarioProf horarioProf = null;
-					for (HorarioProf horarioPrf : this.centroPdfs.getHorarios().getHorariosProfesores()
-							.getHorarioProf())
+					HorarioProf horarioProfesor = null;
+					List<HorarioProf> horarioProfList = new ArrayList<>();
+					fillHorarioProfValues(horarioProfList);
+					for (HorarioProf horarioPrf : horarioProfList)
 					{
 						if (horarioPrf.getHorNumIntPR().trim().equalsIgnoreCase(profesor.getNumIntPR().trim()))
 						{
-							horarioProf = horarioPrf;
+							horarioProfesor = horarioPrf;
 						}
 					}
 
-					if (horarioProf != null)
+					if (horarioProfesor != null)
 					{
 						// --- HORARIO PROF EXISTS ---
 
 						// --- FOR EACH ACTIVIDAD ---
 						Map<String, List<Actividad>> mapProfesor = new HashMap<>();
-						for (Actividad atcv : horarioProf.getActividad())
+						for (Actividad atcv : horarioProfesor.getActividad())
 						{
-							TimeSlot temporalTramo = this.extractTramoFromCentroActividad(this.centroPdfs, atcv);
+							TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( atcv);
 
 							if (!mapProfesor.containsKey(temporalTramo.getDayNumber().trim()))
 							{
@@ -2729,8 +2714,7 @@ public class TimetableRest
 				try
 				{
 					// --- USING APPLICATION PDF TO GENERATE THE PDF , WITH ALL TEACHERS ---
-					ApplicationPdf applicationPdf = new ApplicationPdf();
-					applicationPdf.getAllTeachersPdfInfo(mapProfesors, this.centroPdfs);
+					applicationPdf.getAllTeachersPdfInfo(mapProfesors);
 
 					// --- GETTING THE PDF BY NAME URL ---
 					File file = new File("All_Teachers_Horarios.pdf");
@@ -2769,17 +2753,7 @@ public class TimetableRest
 					log.info(error, horariosError);
 					return ResponseEntity.status(400).body(horariosError);
 				}
-			} else
-			{
-				// --- ERROR ---
-				String error = "ERROR centroPdfs IS NULL OR NOT FOUND";
-
-				log.info(error);
-
-				HorariosError horariosError = new HorariosError(400, error, null);
-				log.info(error, horariosError);
-				return ResponseEntity.status(400).body(horariosError);
-			}
+			
 		} catch (Exception exception)
 		{
 			String error = "Server Error";
@@ -2799,15 +2773,15 @@ public class TimetableRest
 	{
 		try
 		{
-			Map<Grupo, Map<String, List<Actividad>>> mapGroups = new HashMap<>();
-			if (this.centroPdfs != null)
-			{
+			Map<GrupoEntity, Map<String, List<Actividad>>> mapGroups = new HashMap<>();
 				// --- CENTRO PDF IS LOADED---
-				for (Grupo grupo : this.centroPdfs.getDatos().getGrupos().getGrupo())
+				for (GrupoEntity grupo : this.grupoRepo.findAll())
 				{
 					// --- FOR EACH GRUPO ---
 					HorarioGrup horarioGrup = null;
-					for (HorarioGrup horarioGrp : this.centroPdfs.getHorarios().getHorariosGrupos().getHorarioGrup())
+					List<HorarioGrup> horarioGrupList = new ArrayList<>();
+					fillHorarioGrupoValues(horarioGrupList);
+					for (HorarioGrup horarioGrp : horarioGrupList)
 					{
 						if (horarioGrp.getHorNumIntGr().trim().equalsIgnoreCase(grupo.getNumIntGr().trim()))
 						{
@@ -2823,7 +2797,7 @@ public class TimetableRest
 						Map<String, List<Actividad>> mapGroup = new HashMap<>();
 						for (Actividad atcv : horarioGrup.getActividad())
 						{
-							TimeSlot temporalTramo = this.extractTramoFromCentroActividad(this.centroPdfs, atcv);
+							TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( atcv);
 
 							if (!mapGroup.containsKey(temporalTramo.getDayNumber().trim()))
 							{
@@ -2849,8 +2823,8 @@ public class TimetableRest
 				try
 				{
 					// --- USING APPLICATION PDF TO GENERATE THE PDF , WITH ALL TEACHERS ---
-					ApplicationPdf applicationPdf = new ApplicationPdf();
-					applicationPdf.getAllGroupsPdfInfo(mapGroups, this.centroPdfs);
+
+					applicationPdf.getAllGroupsPdfInfo(mapGroups);
 
 					// --- GETTING THE PDF BY NAME URL ---
 					File file = new File("All_Groups_Horarios.pdf");
@@ -2889,17 +2863,7 @@ public class TimetableRest
 					log.info(error, horariosError);
 					return ResponseEntity.status(400).body(horariosError);
 				}
-			} else
-			{
-				// --- ERROR ---
-				String error = "ERROR centroPdfs IS NULL OR NOT FOUND";
-
-				log.info(error);
-
-				HorariosError horariosError = new HorariosError(400, error, null);
-				log.info(error, horariosError);
-				return ResponseEntity.status(400).body(horariosError);
-			}
+			
 		} catch (Exception exception)
 		{
 			String error = "Server Error";
@@ -2951,8 +2915,8 @@ public class TimetableRest
 	{
 		try
 		{
-
-			if (this.students.isEmpty())
+			studentsEntity = this.iStudentsRepository.findAll();
+			if (this.studentsEntity.isEmpty())
 			{
 				throw new HorariosError(409, "No hay alumnos cargados en el servidor");
 			}

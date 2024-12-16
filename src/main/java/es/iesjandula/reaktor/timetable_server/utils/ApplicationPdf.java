@@ -1,4 +1,4 @@
-package es.iesjandula.reaktor.timetable_server.models;
+package es.iesjandula.reaktor.timetable_server.utils;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
@@ -15,19 +17,22 @@ import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
-
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
+import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.ProfesorEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
-import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
-import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
-import es.iesjandula.reaktor.timetable_server.models.parse.Centro;
-import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
-import es.iesjandula.reaktor.timetable_server.models.parse.Profesor;
-import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
+import es.iesjandula.reaktor.timetable_server.repository.IActividadRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IAsignaturaRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IAulaRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IProfesorRepository;
+import es.iesjandula.reaktor.timetable_server.repository.ITimeSlotRepository;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -61,8 +66,24 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
+@Service
 public class ApplicationPdf
 {
+	@Autowired
+	ITimeSlotRepository iTimeSlotRepository;
+	
+	@Autowired
+	IActividadRepository iActividadRepository;
+	
+	@Autowired
+	IAulaRepository iAulaRepository;
+	
+	@Autowired
+	IProfesorRepository iProfesorRepository;
+	
+	@Autowired
+	IAsignaturaRepository iAsignaturaRepository;
+	
 	/**
 	 * Method getInfoPdf get hte professor info and make PDF
 	 * @param centro
@@ -70,7 +91,7 @@ public class ApplicationPdf
 	 * @param profesor
 	 * @throws HorariosError 
 	 */
-	public void getInfoPdf(Centro centro , Map<String,List<Actividad>> profesorMap,Profesor profesor) throws HorariosError 
+	public void getInfoPdf( Map<String,List<Actividad>> profesorMap,ProfesorEntity profesor) throws HorariosError 
 	{
 		try 
 		{
@@ -128,7 +149,7 @@ public class ApplicationPdf
 				for(Actividad act : set.getValue()) 
 				{
 					// -- GET THE TRAMO OBJECT FROM THE ACTIVIDAD ---
-					TimeSlot temporalTramo = this.extractTramoFromCentroActividad(centro, act);
+					TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( act);
 					if(temporalTramo!=null) 
 					{
 						// --- GET THE TIME START AND END FROM THE TEMPORAL_TRAMO ---
@@ -137,13 +158,13 @@ public class ApplicationPdf
 						log.info(temporalHourTime);
 						
 						// --- GET THE ASIGNATURA FROM ACTIVIDAD BY ID ---
-						Asignatura temporalAsignatura = this.getAsignaturaById(act.getAsignatura().trim(),centro);
+						AsignaturaEntity temporalAsignatura = this.getAsignaturaById(act.getAsignatura().trim());
 						if(temporalAsignatura!=null) 
 						{
 							log.info("ASIGNATURA: "+temporalAsignatura.getNombre().trim());
 							
 							//--- GET THE AULA FROM ACTIVIDAD BY ID ---
-							Aula temporalAula = this.getAulaById(act.getAula().trim(),centro);
+							AulaEntity temporalAula = this.getAulaById(act.getAula().trim());
 							if(temporalAula!=null) 
 							{
 								log.info("AULA : "+temporalAula.getNombre().trim());
@@ -241,10 +262,10 @@ public class ApplicationPdf
 	 * @param centro
 	 * @return
 	 */
-	private Aula getAulaById(String id, Centro centro)
+	private AulaEntity getAulaById(String id)
 	{
-		Aula aula = null;
-		for(Aula aul : centro.getDatos().getAulas().getAula()) 
+		AulaEntity aula = null;
+		for(AulaEntity aul : this.iAulaRepository.findAll()) 
 		{
 			if(aul.getNumIntAu().trim().equalsIgnoreCase(id.trim())) 
 			{
@@ -261,10 +282,10 @@ public class ApplicationPdf
 	 * @param centro
 	 * @return
 	 */
-	private Asignatura getAsignaturaById(String id, Centro centro)
+	private AsignaturaEntity getAsignaturaById(String id)
 	{
-		Asignatura asignatura = null;
-		for(Asignatura asig : centro.getDatos().getAsignaturas().getAsignatura()) 
+		AsignaturaEntity asignatura = null;
+		for(AsignaturaEntity asig : this.iAsignaturaRepository.findAll()) 
 		{
 			if(asig.getNumIntAs().trim().equalsIgnoreCase(id.trim())) 
 			{
@@ -334,9 +355,9 @@ public class ApplicationPdf
 	 * @param tramo
 	 * @return
 	 */
-	private TimeSlot extractTramoFromCentroActividad(Centro centro, Actividad actividad)
+	private TimeSlotEntity extractTramoFromCentroActividad( Actividad actividad)
 	{
-		for(TimeSlot tram : centro.getDatos().getTramosHorarios().getTramo()) 
+		for(TimeSlotEntity tram : this.iTimeSlotRepository.recuperaListadoTramosHorariosEntity()) 
 		{
 			// --- GETTING THE TRAMO ---
 			if(actividad.getTramo().trim().equalsIgnoreCase(tram.getNumTr().trim())) 
@@ -353,7 +374,7 @@ public class ApplicationPdf
 	 * @param grupoMap
 	 * @throws HorariosError 
 	 */
-	public void getInfoPdfHorarioGrupoCentro(Centro centroPdfs, Map<String, List<Actividad>> grupoMap, String grupo) throws HorariosError
+	public void getInfoPdfHorarioGrupoCentro( Map<String, List<Actividad>> grupoMap, String grupo) throws HorariosError
 	{
 
 		try
@@ -412,16 +433,16 @@ public class ApplicationPdf
 				Collections.sort(temporalList);
 				for(Actividad actv : temporalList) 
 				{
-					TimeSlot temporalTramo = this.extractTramoFromCentroActividad(centroPdfs, actv);
+					TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( actv);
 					
 					String horaInicio = temporalTramo.getStartHour().trim();
 					String horaFinal = temporalTramo.getEndHour().trim();
 					
-					Asignatura asignatura = this.getAsignaturaById(actv.getAsignatura().trim(), centroPdfs);
+					AsignaturaEntity asignatura = this.getAsignaturaById(actv.getAsignatura().trim());
 					
 					String nombreAsignatura = asignatura.getNombre().trim();
 					
-					Profesor profesor = this.getProfesorById(actv.getProfesor().trim(),centroPdfs);
+					ProfesorEntity profesor = this.getProfesorById(actv.getProfesor().trim());
 					
 					String nombreProfesor = profesor.getNombre().trim()+" "+profesor.getPrimerApellido().trim()+" "+profesor.getSegundoApellido().trim();
 					
@@ -487,9 +508,9 @@ public class ApplicationPdf
 	 * @param centroPdfs
 	 * @return
 	 */
-	private Profesor getProfesorById(String id, Centro centroPdfs)
+	private ProfesorEntity getProfesorById(String id)
 	{
-		for(Profesor profesor : centroPdfs.getDatos().getProfesores().getProfesor()) 
+		for(ProfesorEntity profesor : this.iProfesorRepository.findAll()) 
 		{
 			if(profesor.getNumIntPR().trim().equalsIgnoreCase(id.trim()))
 			{
@@ -504,7 +525,7 @@ public class ApplicationPdf
 	 * @param mapProfesors
 	 * @throws HorariosError 
 	 */
-	public void getAllTeachersPdfInfo(Map<Profesor, Map<String, List<Actividad>>> mapProfesors, Centro centroPdfs) throws HorariosError
+	public void getAllTeachersPdfInfo(Map<ProfesorEntity, Map<String, List<Actividad>>> mapProfesors) throws HorariosError
 	{
 		try
 		{
@@ -519,10 +540,10 @@ public class ApplicationPdf
 			PdfPTable pdfTable = null;
 			for(Map.Entry entry : mapProfesors.entrySet()) 
 			{
-				System.out.println(((Profesor)entry.getKey()));
+				System.out.println(((ProfesorEntity)entry.getKey()));
 				
 				// --- GETTING THE PROFESSOR ---
-				Profesor profesor = ((Profesor)entry.getKey());
+				ProfesorEntity profesor = ((ProfesorEntity)entry.getKey());
 				
 				// --- GETTING THE MAP OF THE PROFESSOR ---
 				Map<String,List<Actividad>> mapa = (Map<String,List<Actividad>>)entry.getValue();
@@ -573,13 +594,13 @@ public class ApplicationPdf
 					for(Actividad actv : temporalList) 
 					{
 						// --- GET THE TRAMO OF THE ACTIVIDAD ---
-						TimeSlot temporalTramo = this.extractTramoFromCentroActividad(centroPdfs, actv);
+						TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( actv);
 						
 						String horaInicio = temporalTramo.getStartHour().trim();
 						String horaFinal = temporalTramo.getEndHour().trim();
 						
-						Asignatura asignatura = this.getAsignaturaById(actv.getAsignatura().trim(), centroPdfs);
-						Aula aula = this.getAulaById(actv.getAula().trim(), centroPdfs);
+						AsignaturaEntity asignatura = this.getAsignaturaById(actv.getAsignatura().trim());
+						AulaEntity aula = this.getAulaById(actv.getAula().trim());
 						
 						String nombreAsignatura = asignatura.getNombre().trim();
 						
@@ -647,7 +668,7 @@ public class ApplicationPdf
 	 * @param centroPdfs
 	 * @throws HorariosError 
 	 */
-	public void getAllGroupsPdfInfo(Map<Grupo, Map<String, List<Actividad>>> mapGroups, Centro centroPdfs) throws HorariosError
+	public void getAllGroupsPdfInfo(Map<GrupoEntity, Map<String, List<Actividad>>> mapGroups) throws HorariosError
 	{
 		try
 		{
@@ -662,10 +683,10 @@ public class ApplicationPdf
 			PdfPTable pdfTable = null;
 			for(Map.Entry entry : mapGroups.entrySet()) 
 			{
-				System.out.println(((Grupo)entry.getKey()));
+				System.out.println(((GrupoEntity)entry.getKey()));
 				
 				// --- GETTING THE PROFESSOR ---
-				Grupo grupo = ((Grupo)entry.getKey());
+				GrupoEntity grupo = ((GrupoEntity)entry.getKey());
 				
 				// --- GETTING THE MAP OF THE PROFESSOR ---
 				Map<String,List<Actividad>> mapa = (Map<String,List<Actividad>>)entry.getValue();
@@ -716,13 +737,13 @@ public class ApplicationPdf
 					for(Actividad actv : temporalList) 
 					{
 						// --- GET THE TRAMO OF THE ACTIVIDAD ---
-						TimeSlot temporalTramo = this.extractTramoFromCentroActividad(centroPdfs, actv);
+						TimeSlotEntity temporalTramo = this.extractTramoFromCentroActividad( actv);
 						
 						String horaInicio = temporalTramo.getStartHour().trim();
 						String horaFinal = temporalTramo.getEndHour().trim();
 						
-						Asignatura asignatura = this.getAsignaturaById(actv.getAsignatura().trim(), centroPdfs);
-						Profesor profesor = this.getProfesorById(actv.getProfesor().trim(), centroPdfs);
+						AsignaturaEntity asignatura = this.getAsignaturaById(actv.getAsignatura().trim());
+						ProfesorEntity profesor = this.getProfesorById(actv.getProfesor().trim());
 						
 						String nombreAsignatura = asignatura.getNombre().trim();
 						
