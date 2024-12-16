@@ -1707,39 +1707,17 @@ public class TimetableRest
 	 *         error de servidor
 	 */
 	@RequestMapping("/student/visita/bathroom")
-	// TODO: COMPROBAR POR QUE NO FUNCIONA EL REGISTRO.
 	public ResponseEntity<?> postVisit(@RequestParam(required = true, name = "name") String name,
 			@RequestParam(required = true, name = "lastName") String lastname,
 			@RequestParam(required = true, name = "course") String course)
 	{
 		try
 		{
-			// Buscamos el estudiante
+			//Buscamos el estudiante
 			Optional<StudentsEntity> studentEntityOpt = this.iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname, course);
-			log.info("Estudiante recuperado: {}", studentEntityOpt.toString());
-
-			if (studentEntityOpt.isEmpty())
-			{
-				throw new HorariosError(400, "El estudiante no resulta registrado en bases de datos.");
-			}
-
-			StudentsEntity studentEntity = studentEntityOpt.get();
-			
-			// Controlar si el estudiante está actualmente en el baño.
-			Boolean studentInBathroom = studentEntity.getInBathroom() != null && studentEntity.getInBathroom();
-
-			if (!studentInBathroom)
-			{
-				// Actualiza el estado del estudiante a "En el ebaño = true"
-				studentEntity.setInBathroom(true);
-				// Actualiza el registro en bases de datos.
-				iStudentsRepo.saveAndFlush(studentEntity);
-				
-				this.operations.comprobarVisita(studentEntity);
-				
-			}
-			
-			// En caso de que no haya ido al baño se anota
+            log.info("Estudiante recuperado: {}", studentEntityOpt.toString());
+			//En caso de que no haya ido al baño se anota
+			this.operations.comprobarVisita(studentEntityOpt.get());
 
 			// Si no hay error devolvemos que todo ha ido bien
 			return ResponseEntity.ok().body("Salida al baño marcada con éxito.");
