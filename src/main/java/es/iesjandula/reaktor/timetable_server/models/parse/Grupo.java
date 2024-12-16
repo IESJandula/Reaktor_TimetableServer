@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.parse;
 
+import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,9 +24,17 @@ public class Grupo implements Comparable<Grupo>
 	private String nombre;
 
 	@Override
-	public int compareTo(Grupo other) {
+	public int compareTo(Grupo other)
+	{
 
 		return this.nombre.compareTo(other.nombre);
+	}
+	
+	public Grupo ( GrupoEntity grupoEntidad)
+	{
+		this.abreviatura = grupoEntidad.getAbreviatura();
+		this.nombre = grupoEntidad.getNombre();
+		this.numIntGr = grupoEntidad.getNumIntGr();
 	}
 	
 	

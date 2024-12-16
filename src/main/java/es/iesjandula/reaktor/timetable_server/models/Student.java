@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models;
 
+import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,22 @@ public class Student implements Comparable<Student>
 	
 	/**Tutor email */
 	private String tutorEmail;
+	
+
+	// Constructor basado en entidad.
+	public Student (StudentsEntity studentEntity)
+	{
+		this.name 				 = studentEntity.getName();
+		this.lastName 			 = studentEntity.getLastName();
+		this.course 			 = studentEntity.getCourse();
+		this.matriculationYear   = studentEntity.getMatriculationYear();
+		this.firstTutorLastName  = studentEntity.getFirstTutorLastName();
+		this.secondTutorLastName = studentEntity.getSecondTutorLastName();
+		this.tutorName 			 = studentEntity.getTutorName();
+		this.tutorPhone 		 = studentEntity.getTutorPhone();
+		this.tutorEmail 		 = studentEntity.getTutorEmail();
+	}
+	
 
 	/**
 	 * Method compareTo with personal preferences (by lastName)

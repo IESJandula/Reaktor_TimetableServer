@@ -3,10 +3,10 @@ package es.iesjandula.reaktor.timetable_server.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import es.iesjandula.reaktor.timetable_server.models.jpa.PuntosConvivencia;
+import es.iesjandula.reaktor.timetable_server.models.entities.AulaPlanoEntity;
 
 @Repository
-public interface IPuntosConvivenciaRepository extends JpaRepository<PuntosConvivencia, Long>
+public interface IAulaPlanoRepository extends JpaRepository<AulaPlanoEntity, Long> 
 {
 	
 }

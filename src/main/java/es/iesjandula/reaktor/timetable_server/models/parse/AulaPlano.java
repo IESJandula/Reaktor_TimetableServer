@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * @author Pablo Ruiz Canovas
+
  */
 @Data
 @AllArgsConstructor

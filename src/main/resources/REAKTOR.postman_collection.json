@@ -1,0 +1,1081 @@
+{
+	"info": {
+		"_postman_id": "3b2e8777-74f1-4ad4-ac05-b83f552852fb",
+		"name": "REAKTOR",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38627125"
+	},
+	"item": [
+		{
+			"name": "PETICION DE CARGA DE FICHERO XML A REAKTOR",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "d37e30b9-ae07-4295-87a3-6baa5335b73f",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "xmlFile",
+							"type": "file",
+							"src": "/home/jaydee/Github/proyecto-reaktor/Reaktor_TimetableServer/target/classes/horario.xml"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/xml",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getProfesores",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "ab25b1d4-0b4d-41e2-aaa6-4aa2cb6d146f",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/teachers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"teachers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getListStudentsAlphabetically",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "527997a7-71e6-434a-8bd5-e67ab627d746",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "csvFile",
+							"type": "file",
+							"src": "/home/jaydee/Github/Reaktor_TimetableServer/src/main/resources/AlumnadoCentroUnidad.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/sortstudents",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"sortstudents"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getListCourse",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "650b2764-1667-4551-8279-e85d0f7fc504",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/courses",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"courses"
+					],
+					"query": [
+						{
+							"key": "",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getClassroomTeacher",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "650b2764-1667-4551-8279-e85d0f7fc504",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/teacher/get/classroom?name=Isaac&lastname=Nadella Hawking",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"teacher",
+						"get",
+						"classroom"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Isaac"
+						},
+						{
+							"key": "lastname",
+							"value": "Nadella Hawking"
+						},
+						{
+							"key": "",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getClassroomTeacherSchedule",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "e9bed53a-6122-4830-a466-29a6c406db9b",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"numTr\":\"1\",\n    \"dayNumber\":\"1\",\n    \"startHour\":\"8:15\",\n    \"endHour\":\"9:15\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/teacher/get/classroom/tramo?name=Isaac&lastname=Nadella Hawking",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"teacher",
+						"get",
+						"classroom",
+						"tramo"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Isaac"
+						},
+						{
+							"key": "lastname",
+							"value": "Nadella Hawking"
+						},
+						{
+							"key": "",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getTeacherSubject",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "d6141a7a-d0c6-4088-94f2-eb94211fd4fa",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/teachersubject?courseName=1º ESO-A",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"teachersubject"
+					],
+					"query": [
+						{
+							"key": "courseName",
+							"value": "1º ESO-A"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getClassroomCourse",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "9eed6758-03d5-4cf4-96ae-cac8e456afa4",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/teachersubject?courseName=1º ESO-A",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"teachersubject"
+					],
+					"query": [
+						{
+							"key": "courseName",
+							"value": "1º ESO-A"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getNumTramos",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "dcbb03bf-d974-497b-b88e-3d6d6c908d67",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/classroomcourse?courseName=4ESOA",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"classroomcourse"
+					],
+					"query": [
+						{
+							"key": "courseName",
+							"value": "4ESOA"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getListHours",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "f3293200-4634-4b00-b840-d22417c86c13",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/hours",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"hours"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "postVisit",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "d4b0c5d2-d2c9-4735-9932-79bfea9b3ffb",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/student/visita/bathroom?name=Jose Luis&lastname=Abad Santos&course=2 GMNTL B",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"student",
+						"visita",
+						"bathroom"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Jose Luis"
+						},
+						{
+							"key": "lastname",
+							"value": "Abad Santos"
+						},
+						{
+							"key": "course",
+							"value": "2 GMNTL B"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getListPointsCoexistence",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "f3293200-4634-4b00-b840-d22417c86c13",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "csvFile",
+							"type": "file",
+							"src": "/home/jaydee/Github/Reaktor_TimetableServer/src/main/resources/AlumnadoCentroUnidad.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/csv-alumnos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"csv-alumnos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getCourseNames",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "85a2adee-4a3c-4a0b-b1d8-a7a90db84f34",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/points",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"points"
+					],
+					"query": [
+						{
+							"key": "course",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "loadStudents",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "5f7561d1-1824-41d2-b08f-74e8ef4bed0a",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "csvFile",
+							"type": "file",
+							"src": "/home/jaydee/Github/Reaktor_TimetableServer/src/main/resources/AlumnadoCentroUnidad.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/csv-alumnos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"csv-alumnos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "loadPlanos",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "42eb6723-176d-4493-8368-0567de3db82b",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "csvFile",
+							"type": "file",
+							"src": "/home/jaydee/Github/Reaktor_TimetableServer/src/main/resources/planos.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/csv-planos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"csv-planos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getAllClassroom",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "42eb6723-176d-4493-8368-0567de3db82b",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/classroom-planos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"classroom-planos"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendErrorInfo",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "42eb6723-176d-4493-8368-0567de3db82b",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\":402,\n    \"headerInfo\":\"cabecera\",\n    \"infoError\":\"cuerpo mensaje error\",\n    \"wait\":\"false\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/error-info",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"error-info"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getInfoError",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "42eb6723-176d-4493-8368-0567de3db82b",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"headerInfo\":\"cabecera\",\n    \"infoError\":\"cuerpo mensaje error\",\n    \"\"\n\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/error-info",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"error-info"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "checkServerData",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "f2a08ed5-74bd-4222-ab05-c932e3899ece",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/check-data",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"check-data"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getCurrentClassroom",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "b1743994-8426-43a8-ab87-92618c8777a3",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/aula-now?numIntAu=10&abreviatura=1.2&nombre=4ESOA",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"aula-now"
+					],
+					"query": [
+						{
+							"key": "numIntAu",
+							"value": "10"
+						},
+						{
+							"key": "abreviatura",
+							"value": "1.2"
+						},
+						{
+							"key": "nombre",
+							"value": "4ESOA"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendSancion",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "6a31b1e2-bff4-434e-9acf-c28b6969117d",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "    {\n        \"name\": \"Ana MarÃ­a\",\n        \"lastName\": \"Abad Luque\",\n        \"course\": \"1 ESO B\",\n        \"matriculationYear\": \"2023\",\n        \"firstTutorLastName\": \"Abad\",\n        \"secondTutorLastName\": \"Luque\",\n        \"tutorName\": \"Antonia\",\n        \"tutorPhone\": \"600123123\",\n        \"tutorEmail\": \"\"\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/send/sancion?value=1&description=descripcion de prueba",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"send",
+						"sancion"
+					],
+					"query": [
+						{
+							"key": "value",
+							"value": "1"
+						},
+						{
+							"key": "description",
+							"value": "descripcion de prueba"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localizarAlumno",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "6a31b1e2-bff4-434e-9acf-c28b6969117d",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "    {\n        \"name\": \"Ana MarÃ­a\",\n        \"lastName\": \"Abad Luque\",\n        \"course\": \"1 ESO B\",\n        \"matriculationYear\": \"2023\",\n        \"firstTutorLastName\": \"Abad\",\n        \"secondTutorLastName\": \"Luque\",\n        \"tutorName\": \"Antonia\",\n        \"tutorPhone\": \"600123123\",\n        \"tutorEmail\": \"\"\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/parse-course?course=1B_A",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"parse-course"
+					],
+					"query": [
+						{
+							"key": "course",
+							"value": "1B_A"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getAlumnosBathroom",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "6a31b1e2-bff4-434e-9acf-c28b6969117d",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "user",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "    {\n        \"name\": \"Ana MarÃ­a\",\n        \"lastName\": \"Abad Luque\",\n        \"course\": \"1 ESO B\",\n        \"matriculationYear\": \"2023\",\n        \"firstTutorLastName\": \"Abad\",\n        \"secondTutorLastName\": \"Luque\",\n        \"tutorName\": \"Antonia\",\n        \"tutorPhone\": \"600123123\",\n        \"tutorEmail\": \"\"\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8088/horarios/get/alumnos-bathroom",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"horarios",
+						"get",
+						"alumnos-bathroom"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

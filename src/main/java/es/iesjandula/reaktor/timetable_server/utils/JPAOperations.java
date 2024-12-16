@@ -2,12 +2,10 @@ package es.iesjandula.reaktor.timetable_server.utils;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
@@ -78,6 +76,7 @@ public class JPAOperations
 	 */
 	public void comprobarVisita(Student student) throws HorariosError
 	{
+		// Recupera datos de la visita.
 		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
 		Long idAlumno = this.cargarAlumno(student);
 		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
@@ -87,7 +86,7 @@ public class JPAOperations
 		List<VisitasServicio> visitasDto = this.visitasRepo.findAll();
 		if(visitasDto.isEmpty())
 		{
-			this.visitasRepo.save(new VisitasServicio(visitaId, 
+			this.visitasRepo.saveAndFlush(new VisitasServicio(visitaId, 
 					new Alumnos(idAlumno,student.getName(),student.getLastName()), new Curso(cursoId), null));
 		}
 		else
@@ -106,9 +105,8 @@ public class JPAOperations
 			}
 			//Si el bucle termina significa que el alumno no ha ido al baño y que por lo tanto 
 			//podremos registrar una visita sin duplicarla
-			this.visitasRepo.save(new VisitasServicio(visitaId, 
+			this.visitasRepo.saveAndFlush(new VisitasServicio(visitaId, 
 					new Alumnos(idAlumno,student.getName(),student.getLastName()), new Curso(cursoId), null));
-			
 		}
 	}
 	

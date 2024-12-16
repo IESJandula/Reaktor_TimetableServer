@@ -1,7 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.parse;
 
-
-
+import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,17 +14,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TimeSlot
 {
-	/** Attribute numTr*/
+	/** Attribute numTr */
 	private String numTr;
-	
-	/** Attribute numeroDia*/
+
+	/** Attribute numeroDia */
 	private String dayNumber;
-	
-	/** Attribute horaInicio*/
+
+	/** Attribute horaInicio */
 	private String startHour;
-	
-	/** Attribute horaFinal*/
+
+	/** Attribute horaFinal */
 	private String endHour;
-	
-	
+
+	public TimeSlot(TimeSlotEntity timeslotEntity)
+	{
+		this.numTr = timeslotEntity.getNumTr();
+		this.dayNumber = timeslotEntity.getDayNumber();
+		this.startHour = timeslotEntity.getStartHour();
+		this.endHour = timeslotEntity.getEndHour();
+	}
+
 }

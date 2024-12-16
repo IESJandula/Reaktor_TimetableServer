@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Asignaturas
 {
+	private Long id_asignaturas;
+	
 	/** Attribute asignatura*/
 	private List<Asignatura> asignatura;
 	

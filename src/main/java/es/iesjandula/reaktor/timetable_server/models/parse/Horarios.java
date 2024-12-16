@@ -24,5 +24,4 @@ public class Horarios
 	
 	/** Attribute horariosProfesores*/
 	private HorariosProfesores horariosProfesores;
-
 }

@@ -1,6 +1,8 @@
-package es.iesjandula.reaktor.timetable_server.models.parse;
+package es.iesjandula.reaktor.timetable_server.models.entities;
 
-import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,8 +14,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Aula
+@Entity
+public class AulaEntity
 {
+	@Id
 	/** Attribute numIntAu*/
 	private String numIntAu;
 	
@@ -23,11 +27,8 @@ public class Aula
 	/** Attribute nombre*/
 	private String nombre;
 	
-	public Aula( AulaEntity aulaEntidad )
-	{
-		this.numIntAu = aulaEntidad.getNumIntAu();
-		this.abreviatura = aulaEntidad.getAbreviatura();
-		this.nombre = aulaEntidad.getNombre();
-	}
+	/** Atributo de planta**/
+    @Column
+    private String planta;
 
 }

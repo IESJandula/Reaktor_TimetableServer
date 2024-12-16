@@ -27,5 +27,4 @@ public class Datos
 	
 	/** Attribute tramosHorarios*/
 	private TramosHorarios tramosHorarios;
-
 }

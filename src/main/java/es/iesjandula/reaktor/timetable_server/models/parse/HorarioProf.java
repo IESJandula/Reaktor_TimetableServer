@@ -24,5 +24,5 @@ public class HorarioProf
 	private String totUn;
 	
 	/** Attribute totAC*/
-	private String totAC;
+	private String totAC;	
 }

@@ -17,5 +17,4 @@ public class HorariosAulas
 {
 	/** Attribute horarioAula */
 	private List<HorarioAula> horarioAula;
-
 }

@@ -1,10 +1,7 @@
 package es.iesjandula.reaktor.timetable_server.utils;
 
-import java.io.File;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,16 +9,14 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Student;
-import es.iesjandula.reaktor.timetable_server.models.User;
-import es.iesjandula.reaktor.timetable_server.models.Visitas;
+import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
 import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
 import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
@@ -33,73 +28,14 @@ import es.iesjandula.reaktor.timetable_server.models.parse.HorarioAula;
 import es.iesjandula.reaktor.timetable_server.models.parse.HorarioProf;
 import es.iesjandula.reaktor.timetable_server.models.parse.Profesor;
 import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
+import es.iesjandula.reaktor.timetable_server.repository.IAsignaturaRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IGrupoRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
 
 public class TimeTableUtils 
 {
 	/**Logger de la clase */
 	private static Logger log = LogManager.getLogger();
-	
-	/**Clase que gestiona las operaciones relacionadas con la fecha y hora */
-	private TimeOperations timeOperation;
-	
-	public TimeTableUtils()
-	{
-		this.timeOperation = new TimeOperations();
-	}
-	/**
-	 * Metodo que obtiene un usuario pasandole el email y su password si encuentra 
-	 * el usuario lo devuelve en caso contrario devuelve un error
-	 * @deprecated se reemplazara por spring security en el futuro
-	 * @param email email del usuario 
-	 * @param password password del usuario
-	 * @return usuario entontrado
-	 * @throws HorariosError error de cliente por no encontrar el usuario
-	 */
-	public void getUser(String email,String password) throws HorariosError
-	{
-		File file = new File("src/main/resources/users.json");
-		User user = null;
-		try
-		{
-			//Lectura de usuarios
-			ObjectMapper mapper = new ObjectMapper();
-			
-			List<User> users = mapper.readValue(file, new TypeReference<List<User>>(){});
-			
-			//Busqueda del usuario
-			int index = 0;
-			boolean out = false;
-			
-			while(index<users.size() && !out)
-			{
-				user = users.get(index);
-				
-				if(user.getEmail().equals(email) && user.getPassword().equals(password))
-				{
-					out = true;
-				}
-				
-				index++;
-			}
-			
-			//Comprobacion de que se ha encontrado el usuario especificado
-			user = out ? user : null;
-			
-			if(user==null)
-			{
-				log.error("Usuario con email "+email+" y passwd "+password+" no existe");
-				throw new HorariosError(404,"Usuario no encontrado");
-			}
-			
-		}
-		catch(IOException exception)
-		{
-			log.error("Error al leer los usuario del json "+file.getName(),exception);
-			throw new HorariosError(500,"Error al obtener los usuarios del fichero json base",exception);
-		}
-		//El return se coloca para que en un futuro se devuelva el usuario
-		//return user;
-	}
 	
 	public List<ActitudePoints> loadPoints()
 	{
@@ -317,63 +253,54 @@ public class TimeTableUtils
 	 * ya que luego en el frontend saldran datos erroneos
 	 * @return lista de aulas para los planos en el front
 	 */
-	public List<AulaPlano> parseAulasPlano(byte[]data) throws HorariosError
-	{
-		List<AulaPlano> aulas = new LinkedList<AulaPlano>();
-		//Transformamos los datos a string
-		String content = new String(data);
-		
-		//Los separamos por \n
-		String [] splitContent = content.split("\n");
-		
-		//Comprobamos que la cabecera y los datos esten bien formados y parseamos los datos¡
-		if(!splitContent[0].trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre"))
-		{
-			throw new HorariosError(406,"Los datos del fichero son incorrectos la cabecera del csv debe de ser height,width,top,right,left,planta,numIntAu,abreviatura,nombre");
-		}
-		else
-		{
-			for(String rawData:splitContent)
-			{
-				//Nos saltamos la cabecera
-				if(rawData.trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre"))
-				{
-					continue;
-				}
-				else
-				{
-					//Separamos los datos por ,
-					String [] attributes = rawData.split(",");
-					
-					try
-					{
-						//Creamos los atributos y lo añadimos a la lista
-						double height = Double.parseDouble(attributes[0].trim());
-						double width = Double.parseDouble(attributes[1].trim());
-						double top = Double.parseDouble(attributes[2].trim());
-						double right = Double.parseDouble(attributes[3].trim());
-						double left = Double.parseDouble(attributes[4].trim());
-						Aula aula = new Aula(attributes[6].trim(),attributes[7].trim(),attributes[8].trim());
-						
-						aulas.add(new AulaPlano(height,width,top,right,left,attributes[5].trim(),aula));	
-					}
-					catch(NumberFormatException exception)
-					{
-						String message = "Las medidas estan mal formadas";
-						log.error(message,exception);
-						throw new HorariosError(406,message,exception);
-					}
-					catch(NullPointerException exception)
-					{
-						String message = "Hay datos que vienen vacios";
-						log.error(message,exception);
-						throw new HorariosError(406,message,exception);
-					}			
-				}
-			}
-		}
-		
-		return aulas;
+	public List<AulaPlano> parseAulasPlano(byte[] data) throws HorariosError {
+	    List<AulaPlano> aulas = new LinkedList<AulaPlano>();
+
+	    // Transformamos los datos a string
+	    String content = new String(data);
+	    
+	    // Los separamos por \n
+	    String[] splitContent = content.split("\n");
+	    
+	    // Comprobamos que la cabecera y los datos estén bien formados
+	    if (!splitContent[0].trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) {
+	        throw new HorariosError(406, "Los datos del fichero son incorrectos. La cabecera del csv debe ser height,width,top,right,left,planta,numIntAu,abreviatura,nombre");
+	    } else {
+	        for (String rawData : splitContent) {
+	            // Nos saltamos la cabecera
+	            if (rawData.trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) {
+	                continue;
+	            } else {
+	                // Separamos los datos por ","
+	                String[] attributes = rawData.split(",");
+	                
+	                try {
+	                    // Creamos los atributos y lo añadimos a la lista
+	                    double height = Double.parseDouble(attributes[0].trim());
+	                    double width = Double.parseDouble(attributes[1].trim());
+	                    double top = Double.parseDouble(attributes[2].trim());
+	                    double right = Double.parseDouble(attributes[3].trim());
+	                    double left = Double.parseDouble(attributes[4].trim());
+
+	                    // Si ya existe el aula, solo actualizamos los datos o lo ignoramos
+	                    Aula aula = new Aula(attributes[6].trim(), attributes[7].trim(), attributes[8].trim());
+	                    AulaPlano aulaPlano = new AulaPlano(height, width, top, right, left, attributes[5].trim(), aula);
+
+	                    aulas.add(aulaPlano);  // Añadimos el nuevo plano
+	                } catch (NumberFormatException exception) {
+	                    String message = "Las medidas están mal formadas";
+	                    log.error(message, exception);
+	                    throw new HorariosError(406, message, exception);
+	                } catch (NullPointerException exception) {
+	                    String message = "Hay datos que vienen vacíos";
+	                    log.error(message, exception);
+	                    throw new HorariosError(406, message, exception);
+	                }
+	            }
+	        }
+	    }
+	    
+	    return aulas;
 	}
 	
 	/**
@@ -422,6 +349,7 @@ public class TimeTableUtils
 	
 	/**
 	 * Metodo que encuentra un profesor en tiempo real usando el aula seleccionada en los planos
+
 	 * @param centro
 	 * @param aula
 	 * @return profesor encontrado
@@ -496,92 +424,74 @@ public class TimeTableUtils
 	
 	/**
 	 * Metodo que encuentra la asignatura que se esta impartiendo a tiempo real usando el aula seleccionada de los planos
+
 	 * @param centro
 	 * @param profesor
 	 * @return asignatura encontrada
 	 * @throws HorariosError
 	 */
-	public Map<String,Object> searchSubjectAulaNow(Centro centro,Profesor profesor) throws HorariosError
-	{
-		Map<String,Object> asignaturaActividad = new HashMap<String,Object>();
-		Asignatura asignatura = null;
-		String numeroAsignatura = "";
-		TimeOperations timeOp = new TimeOperations();
-		LocalDateTime date = LocalDateTime.now();
-		String actualTime = date.getHour() + ":" + date.getMinute();
-		//Obtenemos el tramo actual
-		TimeSlot tramo = timeOp.gettingTramoActual(centro, actualTime);
-		
-		if(tramo!=null)
-		{
-			//Obtenemos la lista de horarios de los profesores
-			List<HorarioProf> horarioProfesor = centro.getHorarios().getHorariosProfesores().getHorarioProf();
-			
-			for(HorarioProf horario:horarioProfesor)
-			{
-				if(horario.getHorNumIntPR().equalsIgnoreCase(profesor.getNumIntPR().trim()))
-				{
-					//Buscamos la actividad actual en la lista de horarios usando el tramo actual
-					for(Actividad act:horario.getActividad())
-					{
-						if(act.getTramo().trim().equalsIgnoreCase(tramo.getNumTr().trim()))
-						{
-							numeroAsignatura = act.getAsignatura();
-							asignaturaActividad.put("actividad", act);
-							break;
-						}
-					}
-				}
-			}
-			
-			if(!numeroAsignatura.isEmpty())
-			{
-				int index = 0;
-				boolean out = false;
-				List<Asignatura> asignaturas = centro.getDatos().getAsignaturas().getAsignatura();
-				
-				//Buscamos el profesor por su numero
-				while(index<asignaturas.size() && !out)
-				{
-					Asignatura asig = asignaturas.get(index);
-					if(asig.getNumIntAs().equalsIgnoreCase(numeroAsignatura))
-					{
-						asignatura = asig;
-						out = true;
-					}
-					index++;
-				}
-				if(asignatura!=null)
-				{
-					asignaturaActividad.put("asignatura", asignatura);
-				}
-					
-			}
-			else
-			{
-				throw new HorariosError(404,"No se ha podido encontrar la asignatura en este momento actual");
-			}
-		}
-		else
-		{
-			throw new HorariosError(406,"Se esta buscando un horario fuera dfel horario de trabajo del centro");
-		}
-		
-		if(asignaturaActividad.size()<=1)
-		{
-			throw new HorariosError(400,"El conjunto esta incompleto falta una asignatura o actividad por recoger");
-		}
-		
-		return asignaturaActividad;
+
+	@Autowired
+	private IAsignaturaRepository asignaturaRepo;
+	
+	public Map<String, Object> searchSubjectAulaNow(Centro centro, Profesor profesor) throws HorariosError {
+	    Map<String, Object> asignaturaActividad = new HashMap<>();
+	    Asignatura asignatura = null;
+	    String numeroAsignatura = "";
+	    TimeOperations timeOp = new TimeOperations();
+	    LocalDateTime date = LocalDateTime.now();
+	    String actualTime = date.getHour() + ":" + date.getMinute();
+
+	    // Obtener el tramo actual
+	    TimeSlot tramo = timeOp.gettingTramoActual(centro, actualTime);
+	    
+	    if (tramo != null) {
+	        List<HorarioProf> horarioProfesor = centro.getHorarios().getHorariosProfesores().getHorarioProf();
+	        
+	        // Buscar el horario del profesor en la base de datos
+	        for (HorarioProf horario : horarioProfesor) {
+	            if (horario.getHorNumIntPR().equalsIgnoreCase(profesor.getNumIntPR().trim())) {
+	                // Buscar la actividad actual
+	                for (Actividad act : horario.getActividad()) {
+	                    if (act.getTramo().trim().equalsIgnoreCase(tramo.getNumTr().trim())) {
+	                        numeroAsignatura = act.getAsignatura();
+	                        asignaturaActividad.put("actividad", act);
+	                        break;
+	                    }
+	                }
+	            }
+	        }
+
+	        if (!numeroAsignatura.isEmpty()) {
+	            // Buscar la asignatura en la base de datos en lugar de la sesión
+	            asignatura = asignaturaRepo.findByNumIntAs(numeroAsignatura).orElseThrow(() -> new HorariosError(404, "Asignatura no encontrada en la base de datos"));
+
+	            asignaturaActividad.put("asignatura", asignatura);
+	        } else {
+	            throw new HorariosError(404, "No se ha podido encontrar la asignatura en este momento actual");
+	        }
+	    } else {
+	        throw new HorariosError(406, "Se está buscando un horario fuera del horario de trabajo del centro");
+	    }
+
+	    if (asignaturaActividad.size() <= 1) {
+	        throw new HorariosError(400, "El conjunto está incompleto, falta una asignatura o actividad por recoger");
+	    }
+
+	    return asignaturaActividad;
 	}
 	
 	/**
 	 * Metodo que busca el grupo que se encuentra en el aula seleccionada en los planos
+
 	 * en tiempo real
 	 * @param centro
 	 * @param actividad
 	 * @return grupo encontrado
 	 */
+
+	@Autowired
+	private IGrupoRepository iGrupoRepo;
 	public List<Grupo> searchGroupAulaNow(Centro centro,Actividad actividad)
 	{
 		List<Grupo> grupos = new LinkedList<Grupo>();
@@ -612,8 +522,8 @@ public class TimeTableUtils
 			numeroGrupo.add(numGrupos.getGrupo5());
 		}
 		
-		//Obtenemos todos los grupos
-		List<Grupo> listaGrupos = centro.getDatos().getGrupos().getGrupo();
+		//Obtenemos todos los grupos guardado en base este metodo esta en el repositorio
+		 List<Grupo> listaGrupos = iGrupoRepo.findAllByNumIntGrIn(numeroGrupo);
 		
 		for(Grupo item:listaGrupos)
 		{
@@ -637,67 +547,48 @@ public class TimeTableUtils
 	 * @return lista de alumnos por grupo
 	 * @throws HorariosError
 	 */
-	public List<Student> getAlumnosAulaNow(List<Grupo> grupos, List<Student> alumnos) throws HorariosError
-	{
-		List<Student> alumnosAula = new LinkedList<Student>();
-		
-		for(Grupo grupo:grupos)
-		{
-			//Para el caso de bachillerato que se forma de BHCS (Bachillerato ciencias sociales) o
-			//BCT (Bachillerato Ciencias Tecnologicas) o BC (Bachillerato) se aplicara un filtro especial
-			//Para recoger solo esos alumnos
-			String grupoEspecial = this.getAlumnosBach(grupo.getNombre());
-			
-			//Existen casos que no se pueden trasndformar de forma general por ejemplo 2º ESO-C-BILING.
-			//se aplica un filtro especial para recoger solo esos alumnos
-			grupoEspecial = grupoEspecial.isEmpty() ? this.getSpecialGroup(grupo.getNombre()) : grupoEspecial;
-			
-			if(grupoEspecial.isEmpty())
-			{
-				//Obtenemos el grado del curso en caso de que este vacio lanzamos un error
-				String grade = getGroupGrade(grupo.getNombre());
-				
-				if(grade.isEmpty())
-				{
-					throw new HorariosError(400,"El curso seleccionado "+grupo.getNombre()+" no coincide con ningun curso de los alumnos");
-				}
-				
-				//Tranformamos los grupos del xml a los grupos de los alumnos del csv
-				String grupoAlumno = this.transformGroup(grupo.getNombre());
-				
-				//Letra del grupo, puede venir vacia (2 DAM, 2 FPB, etc)
-				String letraGrupo = this.getGroupLetter(grupo.getNombre());
-				
-				//Grupo completo
-				String completeGrade = grade + " " + grupoAlumno ;
-				if (letraGrupo != null && !letraGrupo.isEmpty())
-				{
-					completeGrade = completeGrade + " " + letraGrupo;
-				}
-				
-				//Busqueda de los alumnos
-				for(Student alumno:alumnos)
-				{
-					if(completeGrade.equals(alumno.getCourse()))
-					{
-						alumnosAula.add(alumno);
-					}
-				}
-			}
-			else
-			{
-				//Busqueda de los alumnos
-				for(Student alumno:alumnos)
-				{
-					if(grupoEspecial.equals(alumno.getCourse()))
-					{
-						alumnosAula.add(alumno);
-					}
-				}
-			}
-		}
-		
-		return alumnosAula;
+	@Autowired
+	private IStudentsRepository studentRepo;
+
+	public List<Student> getAlumnosAulaNow(List<Grupo> grupos, List<Student> alumnos) throws HorariosError {
+	    List<Student> alumnosAula = new LinkedList<>();
+
+	    for (Grupo grupo : grupos) {
+	        // Para el caso de Bachillerato, aplicar un filtro especial
+	        String grupoEspecial = this.getAlumnosBach(grupo.getNombre());
+
+	        // Si el grupo no es de Bachillerato, aplicar otro filtro especial
+	        grupoEspecial = grupoEspecial.isEmpty() ? this.getSpecialGroup(grupo.getNombre()) : grupoEspecial;
+
+	        List<StudentsEntity> studentsEntities;
+	        if (grupoEspecial.isEmpty()) {
+	            // Construir el curso del grupo
+	            String grade = getGroupGrade(grupo.getNombre());
+	            if (grade.isEmpty()) {
+	                throw new HorariosError(400, "El curso seleccionado " + grupo.getNombre() + " no coincide con ningún curso de los alumnos");
+	            }
+
+	            String grupoAlumno = this.transformGroup(grupo.getNombre());
+	            String letraGrupo = this.getGroupLetter(grupo.getNombre());
+
+	            // Formar el curso completo
+	            String completeGrade = grade + " " + grupoAlumno;
+	            if (letraGrupo != null && !letraGrupo.isEmpty()) {
+	                completeGrade = completeGrade + " " + letraGrupo;
+	            }
+
+	            studentsEntities = studentRepo.findByCourse(completeGrade);
+	        } else {
+	            studentsEntities = studentRepo.findByCourse(grupoEspecial);
+	        }
+
+	        // Convertir las entidades de StudentsEntity a Student usando el constructor Student(StudentsEntity entity)
+	        for (StudentsEntity entity : studentsEntities) {
+	            alumnosAula.add(new Student(entity));  // Aquí se usa el constructor que ya tienes
+	        }
+	    }
+
+	    return alumnosAula;
 	}
 	
 	/**
@@ -891,75 +782,77 @@ public class TimeTableUtils
 		}
 	}
 	
-	public String parseStudentGroup (String group, List<Grupo> grupos) throws HorariosError
+	public String parseStudentGroup(String group, List<GrupoEntity> grupos) throws HorariosError 
 	{
-		String grupoFinal = "";
-		int index = 0;
-		boolean out = false;
-		while(index<grupos.size() && !out)
-		{
-			Grupo grupo = grupos.get(index);
-			
-			if(grupo.getNombre().equals("GRecr") || grupo.getNombre().equals("Guardia Biblioteca") || grupo.getNombre().equals("Guardias"))
-			{
-				index++;
-				continue;
-			}
-			//Para el caso de bachillerato que se forma de BHCS (Bachillerato ciencias sociales) o
-			//BCT (Bachillerato Ciencias Tecnologicas) o BC (Bachillerato) se aplicara un filtro especial
-			//Para recoger solo esos alumnos
-			String grupoEspecial = this.getAlumnosBach(grupo.getNombre());
-			
-			//Existen casos que no se pueden trasndformar de forma general por ejemplo 2º ESO-C-BILING.
-			//se aplica un filtro especial para recoger solo esos alumnos
-			grupoEspecial = grupoEspecial.isEmpty() ? this.getSpecialGroup(grupo.getNombre()) : grupoEspecial;
-			
-			if(grupoEspecial.isEmpty())
-			{
-				//Obtenemos el grado del curso en caso de que este vacio lanzamos un error
-				String grade = getGroupGrade(grupo.getNombre());
-				
-				if(grade.isEmpty())
-				{
-					throw new HorariosError(400,"El curso seleccionado "+group+" no coincide con ningun curso de los datos generales");
-				}
-				
-				//Tranformamos los grupos del xml a los grupos de los alumnos del csv
-				String grupoAlumno = this.transformGroup(grupo.getNombre());
-				
-				//Letra del grupo, puede venir vacia (2 DAM, 2 FPB, etc)
-				String letraGrupo = this.getGroupLetter(grupo.getNombre());
-				
-				//Grupo completo
-				String grupoCompleto = grade+" "+grupoAlumno+" "+letraGrupo;
-				
-				grupoCompleto = grupoCompleto.trim();
-				
-				if(grupoCompleto.equals(group))
-				{
-					grupoFinal = grupo.getNombre();
-					out = true;
-				}
-			}
-			else
-			{
-				//Busqueda de los alumnos
-				if(grupoEspecial.equals(group))
-				{
-					grupoFinal = grupo.getNombre();
-					out = true;
-				}
-			}
-			
-			index++;
-		}
-		if(grupoFinal.isEmpty())
-		{
-			throw new HorariosError(404,"No se ha podido encontrar ningun curso en los datos generales con este valor "+group);
-		}
-		
-		return grupoFinal;
-		
+	    // Esta variable almacenará el grupo final una vez que lo encontremos.
+	    String grupoFinal = "";
+
+	    // Usaremos este índice para recorrer la lista de grupos.
+	    int index = 0;
+
+	    // Esto nos ayudará a salir del bucle cuando encontremos el grupo que buscamos.
+	    boolean out = false;
+
+	    // Recorremos la lista de grupos hasta que encontremos el correcto o terminemos de procesarlos.
+	    while (index < grupos.size() && !out) 
+	    {
+	        // Obtenemos el grupo actual de la lista.
+	        GrupoEntity grupo = grupos.get(index);
+
+	        // **Casos especiales**: 
+	        // Hay ciertos grupos que necesitan un tratamiento diferente. 
+	        // Por ejemplo, grupos de Bachillerato o aquellos que tienen nombres especiales.
+	        String grupoEspecial = this.getAlumnosBach(grupo.getNombre());
+
+	        // Si no es un caso especial de Bachillerato, verificamos si pertenece a otro grupo especial.
+	        grupoEspecial = grupoEspecial.isEmpty() ? this.getSpecialGroup(grupo.getNombre()) : grupoEspecial;
+
+	        // Si no es un caso especial, seguimos con la transformación general del nombre del grupo.
+	        if (grupoEspecial.isEmpty()) 
+	        {
+	            // Obtenemos el "grado" del curso (por ejemplo, "1º", "2º", "3º").
+	            String grade = getGroupGrade(grupo.getNombre());
+
+	            // Si no podemos determinar el grado, lanzamos un error porque el grupo no es válido.
+	            if (grade.isEmpty()) {
+	                throw new HorariosError(400, "El curso seleccionado " + group + " no coincide con ningún curso válido");
+	            }
+
+	            // Transformamos el nombre del grupo en un formato más estándar (por ejemplo, de "ESO-A" a "ESO").
+	            String grupoAlumno = this.transformGroup(grupo.getNombre());
+
+	            // Obtenemos la letra del grupo (por ejemplo, "A", "B", "C").
+	            String letraGrupo = this.getGroupLetter(grupo.getNombre());
+
+	            // Construimos el nombre completo del grupo (por ejemplo, "1º ESO A").
+	            String grupoCompleto = (grade + " " + grupoAlumno + " " + letraGrupo).trim();
+
+	            // Si el nombre completo coincide con el grupo que buscamos, lo guardamos y salimos del bucle.
+	            if (grupoCompleto.equals(group)) 
+	            {
+	                grupoFinal = grupo.getNombre();
+	                out = true;
+	            }
+	        } 
+	        // Si sí es un caso especial y coincide con el grupo que buscamos, lo guardamos y salimos del bucle.
+	        else if (grupoEspecial.equals(group)) 
+	        {
+	            grupoFinal = grupo.getNombre();
+	            out = true;
+	        }
+
+	        // Avanzamos al siguiente grupo en la lista.
+	        index++;
+	    }
+
+	    // Si terminamos de recorrer la lista y no encontramos un grupo válido, lanzamos un error.
+	    if (grupoFinal.isEmpty()) 
+	    {
+	        throw new HorariosError(404, "No se ha encontrado ningún curso válido para: " + group);
+	    }
+
+	    // Finalmente, devolvemos el nombre del grupo que encontramos.
+	    return grupoFinal;
 	}
 	
 }

@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InfoError 
 {
+	/**ID del error**/
+	 private Long id;
 	/**Cabecera del error */
 	private String headerInfo;
 	

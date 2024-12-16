@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.parse;
 
+import es.iesjandula.reaktor.timetable_server.models.entities.ActividadEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,6 +34,16 @@ public class Actividad implements Comparable<Actividad>
 
 	/** Attribute asignatura */
 	private String asignatura;
+	
+	public Actividad( ActividadEntity actividadEntidad  )
+	{
+		this.numAct = actividadEntidad.getNumAct();
+		this.numUn = actividadEntidad.getNumUn();
+		this.tramo = actividadEntidad.getTramo().getNumTr();
+		this.aula = actividadEntidad.getAula().getNumIntAu();
+		this.profesor = actividadEntidad.getProfesor().getNumIntPR();
+		this.asignatura = actividadEntidad.getAsignatura().getNumIntAs();
+	}
 
 	/**
 	 * Method compareTo

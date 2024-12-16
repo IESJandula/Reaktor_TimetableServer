@@ -12,7 +12,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,6 +21,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,34 +50,39 @@ import es.iesjandula.reaktor.timetable_server.models.Rol;
 import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.Teacher;
 import es.iesjandula.reaktor.timetable_server.models.TeacherMoment;
+import es.iesjandula.reaktor.timetable_server.models.entities.ActividadEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.AulaPlanoEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.GrupoEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.InfoErrorEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.ProfesorEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
+import es.iesjandula.reaktor.timetable_server.models.entities.TimeSlotEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
 import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
-import es.iesjandula.reaktor.timetable_server.models.parse.Asignaturas;
 import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
 import es.iesjandula.reaktor.timetable_server.models.parse.AulaPlano;
-import es.iesjandula.reaktor.timetable_server.models.parse.Aulas;
 import es.iesjandula.reaktor.timetable_server.models.parse.Centro;
-import es.iesjandula.reaktor.timetable_server.models.parse.Datos;
 import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
-import es.iesjandula.reaktor.timetable_server.models.parse.Grupos;
-import es.iesjandula.reaktor.timetable_server.models.parse.GruposActividad;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorarioAsig;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorarioAula;
 import es.iesjandula.reaktor.timetable_server.models.parse.HorarioGrup;
 import es.iesjandula.reaktor.timetable_server.models.parse.HorarioProf;
-import es.iesjandula.reaktor.timetable_server.models.parse.Horarios;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorariosAsignaturas;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorariosAulas;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorariosGrupos;
-import es.iesjandula.reaktor.timetable_server.models.parse.HorariosProfesores;
 import es.iesjandula.reaktor.timetable_server.models.parse.Profesor;
-import es.iesjandula.reaktor.timetable_server.models.parse.Profesores;
 import es.iesjandula.reaktor.timetable_server.models.parse.TimeSlot;
-import es.iesjandula.reaktor.timetable_server.models.parse.TramosHorarios;
+import es.iesjandula.reaktor.timetable_server.repository.IActitudePointsRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IActividadRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IAlumnoRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IAsignaturaRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IAulaPlanoRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IAulaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.ICursosRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IGrupoRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IInfoErrorRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IProfesorRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaALumnoCursoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaRepository;
+import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
+import es.iesjandula.reaktor.timetable_server.repository.ITimeSlotRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IVisitasServicioRepository;
 import es.iesjandula.reaktor.timetable_server.utils.JPAOperations;
 import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
@@ -93,62 +100,99 @@ public class TimetableRest
 {
 	/** Attribute centroPdfs , used for get the info of PDFS */
 	private Centro centroPdfs;
-	
-	/**Clase que se encarga de las operaciones logicas del servidor */
+
+	/** Clase que se encarga de las operaciones logicas del servidor */
 	private TimeTableUtils util;
-	
-	/**Clase que se encarga de gestionar las operaciones con los estudiantes */
+
+	/** Clase que se encarga de gestionar las operaciones con los estudiantes */
 	private StudentOperation studentOperation;
-	
-	/**Clase que se encarga de manejar las operaciones con la base de datos */
+
+	/** Clase que se encarga de manejar las operaciones con la base de datos */
 	private JPAOperations operations;
-	
-	/**Lista de estudiantes cargados por csv */
+
+	/** Lista de estudiantes cargados por csv */
 	private List<Student> students;
-	
-	/**Lista de los planos de las aulas */
-	private List<AulaPlano> aulas;
-	
-	/**Objeto que guarda el error actual de la pagina*/
-	private InfoError infoError;
-	
-	/**Repositorio que contiene todas las operaciones CRUD de la entidad Alumnos */
+
+	/** Lista de los planos de las aulas */
+	private List<AulaPlanoEntity> aulas;
+
+	/** Repositorio que contiene todas las operaciones CRUD de la entidad Alumnos */
 	@Autowired
 	private IAlumnoRepository alumnoRepo;
-	
-	/**Repositorio que contiene todas las operaciones CRUD de la entidad Curso */
-	@Autowired 
+
+	/** Repositorio que contiene todas las operaciones CRUD de la entidad Curso */
+	@Autowired
 	private ICursosRepository cursoRepo;
-	
-	/**Repositorio que contiene todas las operaciones CRUD de la entidad Puntos convivencia */
+
+	/**
+	 * Repositorio que contiene todas las operaciones CRUD de la entidad Puntos
+	 * convivencia
+	 */
 	@Autowired
 	private IPuntosConvivenciaRepository puntosRepo;
-	
-	/**Repositorio que contiene todas las operaciones CRUD de la entidad PuntosConvivenciaAlumnosCurso */
+
+	/**
+	 * Repositorio que contiene todas las operaciones CRUD de la entidad
+	 * PuntosConvivenciaAlumnosCurso
+	 */
 	@Autowired
 	private IPuntosConvivenciaALumnoCursoRepository sancionRepo;
-	
-	/**Repositorio que contiene todas las operaciones CRUD de la entidad VisitasServicio */
+
+	/**
+	 * Repositorio que contiene todas las operaciones CRUD de la entidad
+	 * VisitasServicio
+	 */
 	@Autowired
 	private IVisitasServicioRepository visitasRepo;
+
+	// --------------------------- JAYDEE
+	@Autowired
+	private IAsignaturaRepository asignaturaRepo;
+
+	@Autowired
+	private IGrupoRepository grupoRepo;
+
+	@Autowired
+	private IAulaRepository aulaRepo;
+
+	@Autowired
+	private IProfesorRepository profesorRepo;
+
+	@Autowired
+	private ITimeSlotRepository timeslotRepo;
+
+	@Autowired
+	private IActividadRepository actividadRepo;
+
+	// ---------------Este es para getListPointsCoexistence
+	@Autowired
+	private IActitudePointsRepository iActitudePointsRepo;
+
+	@Autowired
+	private IInfoErrorRepository iInfoErrorRepo;
+
+	@Autowired
+	private IStudentsRepository iStudentsRepo;
 	
+	@Autowired
+	private IAulaPlanoRepository iAulaPlanoRepo;
+
 	public TimetableRest()
 	{
 		this.util = new TimeTableUtils();
 		this.studentOperation = new StudentOperation();
 		this.students = new LinkedList<Student>();
 	}
-	
+
 	/**
-	 * Method sendXmlToObjects
+	 * Este metodo parsea el XML que recibe. Va por este orden. 1- Asignaturas. 2-
+	 * Grupos 3- Aulas 4- Profes 5- Tramos
 	 *
 	 * @param xmlFile
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/send/xml", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> sendXmlToObjects(
-			@RequestPart MultipartFile xmlFile, 
-			HttpSession session)
+	@RequestMapping(value = "/send/xml", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> sendXmlToObjects(@RequestPart MultipartFile xmlFile, HttpSession session)
 	{
 		try
 		{
@@ -174,127 +218,90 @@ public class TimetableRest
 					centro.setAutor(rootCenterElement.getAttribute("autor"));
 					centro.setFecha(rootCenterElement.getAttribute("fecha"));
 					// --------------------------------------------------------------------------------------------------
-					// --- OBJECT DATOS ---
-					Datos datos = new Datos();
+					// --- CARGA DATOS ---
 					// --------------------------------------------------------------------------------------------------
 
-					// --- OBJECT ASIGNATURAS ---
-					Asignaturas asignaturas = new Asignaturas();
-					NodeList nodeAsignaturas = rootCenterElement.getElementsByTagName("ASIGNATURAS");
+					// --- ALMACENAMIENTO ASIGNATURAS ---
+					log.info("- Almacenando asignaturas. -");
 
-					// --- tot_as ATTRIBUTE VALOR ---
-					asignaturas.setTotAs(nodeAsignaturas.item(0).getAttributes().item(0).getTextContent());
-
-					// GETTING ASIGNATURAS (ONLY ONE)
+					// Recupera elemento de NODO padre ASIGNATURAS
 					Element asignaturasElemet = (Element) rootCenterElement.getElementsByTagName("ASIGNATURAS").item(0);
 
-					// GETTING THE LIST OF ASIGNATURA
+					// Recupera elemento de NODOS hijos ASIGNATURA
 					NodeList asignaturasNodeList = asignaturasElemet.getElementsByTagName("ASIGNATURA");
 
-					List<Asignatura> asignaturasList = new ArrayList<>();
-					// GETTING VALUES OF EACH ASIGNATURA
-					this.gettingValuesOfAsignatura(asignaturasNodeList, asignaturasList);
-					log.info(asignaturasList.toString());
-					asignaturas.setAsignatura(asignaturasList);
-					log.info(asignaturas.toString());
-					datos.setAsignaturas(asignaturas);
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfAsignatura(asignaturasNodeList);
+					log.info("Asignaturas almacenadas en BBDD: {}", asignaturasNodeList.getLength());
+
 					// --------------------------------------------------------------------------------------------------
 
-					// --- OBJECT GRUPOS ---
-					Grupos grupos = new Grupos();
-					NodeList nodeGrupos = rootCenterElement.getElementsByTagName("GRUPOS");
+					// --- ALMACENAMIENTO GRUPOS ---
+					log.info("- Almacenando Grupos -.");
 
-					// --- tot_gr ATTRIBUTE VALOR ---
-					grupos.setTotGr(nodeGrupos.item(0).getAttributes().item(0).getTextContent());
-
-					// GETTING GRUPOS (ONLY ONE)
+					// Recupera elemento de NODO padre GRUPOS
 					Element gruposElement = (Element) rootCenterElement.getElementsByTagName("GRUPOS").item(0);
 
-					// GETTING THE LIST OF GRUPO
+					// Recupera listado de nodos GRUPO.
 					NodeList gruposNodeList = gruposElement.getElementsByTagName("GRUPO");
 
-					List<Grupo> gruposList = new ArrayList<>();
-					// GETTING VALUES OF EACH GRUPO
-					this.gettingValuesOfGrupo(gruposNodeList, gruposList);
-					log.info(gruposList.toString());
-					grupos.setGrupo(gruposList);
-					log.info(grupos.toString());
-					datos.setGrupos(grupos);
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfGrupo(gruposNodeList);
+					log.info("Grupos almacenados en BBDD: {}", gruposNodeList.getLength());
+
 					// --------------------------------------------------------------------------------------------------
 
-					// --- OBJECT AULAS ---
-					Aulas aulas = new Aulas();
-					NodeList nodeAulas = rootCenterElement.getElementsByTagName("AULAS");
+					// --- ALMACENAMIENTO AULAS ---
+					log.info("- Almacenando Aulas -.");
 
-					// --- tot_au ATTRIBUTE VALOR ---
-					aulas.setTotAu(nodeAulas.item(0).getAttributes().item(0).getTextContent());
-
-					// GETTING AULAS (ONLY ONE)
+					// Recupera elemento de NODO padre AULAS
 					Element aulasElement = (Element) rootCenterElement.getElementsByTagName("AULAS").item(0);
 
-					// GETTING THE LIST OF AULA
+					// Recupera listado de nodos AULA.
 					NodeList aulasNodeList = aulasElement.getElementsByTagName("AULA");
 
-					List<Aula> aulasList = new ArrayList<>();
-					// GETTING VALUES OF EACH AULA
-					this.gettingValuesOfAula(aulasNodeList, aulasList);
-					log.info(aulasList.toString());
-					aulas.setAula(aulasList);
-					log.info(aulas.toString());
-					datos.setAulas(aulas);
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfAula(aulasNodeList);
+					log.info("Aulas almacenadas en BBDD: {}", aulasNodeList.getLength());
 					// --------------------------------------------------------------------------------------------------
 
-					// --- OBJECT PROFESORES ---
-					Profesores profesores = new Profesores();
-					NodeList nodeProfesores = rootCenterElement.getElementsByTagName("PROFESORES");
+					// --- ALMACENAMIENTO PROFESORES ---
+					log.info("- Almacenando Profesores -.");
 
-					// --- tot_pr ATTRIBUTE VALOR ---
-					profesores.setTotPR(nodeProfesores.item(0).getAttributes().item(0).getTextContent());
-
-					// GETTING PROFESORES (ONLY ONE)
+					// Recupera elemento de NODO padre PROFESORES
 					Element profesoresElement = (Element) rootCenterElement.getElementsByTagName("PROFESORES").item(0);
 
-					// GETTING THE LIST OF PROFESOR
+					// Recupera listado de nodos PROFESOR.
 					NodeList profesoresNodeList = profesoresElement.getElementsByTagName("PROFESOR");
 
-					List<Profesor> profesoresList = new ArrayList<>();
-					// GETTING VALUES OF EACH PROFESOR
-					this.gettingValuesOfProfesor(profesoresNodeList, profesoresList);
-					log.info(profesoresList.toString());
-					profesores.setProfesor(profesoresList);
-					log.info(profesores.toString());
-					datos.setProfesores(profesores);
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfProfesor(profesoresNodeList);
+					log.info("Profesores almacenados en BBDD: {}", profesoresNodeList.getLength());
+
 					// --------------------------------------------------------------------------------------------------
 
-					// --- OBJECT TramosHorarios ---
-					TramosHorarios tramosHorarios = new TramosHorarios();
-					NodeList nodeTramosHorarios = rootCenterElement.getElementsByTagName("TRAMOS_HORARIOS");
+					// --- ALMACENAMIENTO TRAMOS HORARIOS ---
+					log.info("- Almacenando Tramos Horarios -.");
 
-					// --- tot_tr ATTRIBUTE VALOR ---
-					tramosHorarios.setTotTr(nodeTramosHorarios.item(0).getAttributes().item(0).getTextContent());
-
-					// GETTING TRAMOS_HORARIOS (ONLY ONE)
+					// Recupera elemento de NODO padre TRAMOS HORARIOS
 					Element tramosHorariosElement = (Element) rootCenterElement.getElementsByTagName("TRAMOS_HORARIOS")
 							.item(0);
 
-					// GETTING THE LIST OF TRAMO
+					// Recupera listado de nodos TRAMO
 					NodeList tramosHorariosNodeList = tramosHorariosElement.getElementsByTagName("TRAMO");
 
-					List<TimeSlot> tramosList = new ArrayList<>();
-					// GETTING VALUES OF EACH TRAMO
-					this.gettingValuesOfTramo(tramosHorariosNodeList, tramosList);
-					log.info(tramosList.toString());
-					tramosHorarios.setTramo(tramosList);
-					log.info(tramosHorarios.toString());
-					// --------------------------------------------------------------------------------------------------
-					datos.setTramosHorarios(tramosHorarios);
-					// --------------------------------------------------------------------------------------------------
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfTramo(tramosHorariosNodeList);
+					log.info("Tramos horarios almacenados en BBDD: {}", tramosHorariosNodeList.getLength());
 
-					// ---- END OF DATOS ---
-					centro.setDatos(datos);
+					// --------------------------------------------------------------------------------------------------
+					// Nota de David Jason:
+					// En esta sección del código se trata de almacenar una serie de registros
+					// que introducen información acerca de como se relacionan las entidades cuyos
+					// datos se han ido almacenando hasta ahora.
+					// --------------------------------------------------------------------------------------------------
 
 					// --- HORARIOS ---
-					Horarios horarios = new Horarios();
 
 					// --------------------------------------------------------------------------------------------------
 					// --- HORARIOS ELEMENT ---
@@ -302,83 +309,25 @@ public class TimetableRest
 
 					// --------------------------------------------------------------------------------------------------
 
-					// --- HORARIOS ASIGNATURAS ONLY ONE ---
-					HorariosAsignaturas horariosAsignaturas = new HorariosAsignaturas();
+					// HORARIOS ASIG.
+					log.info("- Almacenando datos de Horarios Asignatura -");
 
-					// --- HORARIOS ASIGNATURAS ELEMENT ---
+					// Recupera elemento de NODO padre de HORARIOS ASIGNATURAS.
 					Element horariosAsignaturasElement = (Element) horariosElement
 							.getElementsByTagName("HORARIOS_ASIGNATURAS").item(0);
 
-					// NODELIST HORAIO_ASIG
+					// Recupera listado de nodos HORARIOS ASIGNATURAS.
 					NodeList horarioAsigNodeList = horariosAsignaturasElement.getElementsByTagName("HORARIO_ASIG");
 
-					// EACH HORARIOS_ASIG
-					List<HorarioAsig> horarioAsigList = new ArrayList<>();
-					this.gettingValuesOfHorarioAsig(horarioAsigNodeList, horarioAsigList);
-					log.info(horarioAsigList.toString());
-					horariosAsignaturas.setHorarioAsig(horarioAsigList);
-					horarios.setHorariosAsignaturas(horariosAsignaturas);
-					// --------------------------------------------------------------------------------------------------
+					// Almacena en BBDD el los valores listados en la lista de nodos XML.
+					this.saveValuesOfHorarioAsig(horarioAsigNodeList);
+					log.info("Horarios Asignatura almacenados en BBDD: {}", horarioAsigNodeList.getLength());
 
-					// --- HORARIOS_GRUPOS ONLY ONE ---
-					HorariosGrupos horariosGrupos = new HorariosGrupos();
-
-					// --- HORARIO_GRUP ELEMENT ---
-					Element horariosGruposElement = (Element) horariosElement.getElementsByTagName("HORARIOS_GRUPOS")
-							.item(0);
-
-					// NODELIST HORARIO_GRUP
-					NodeList horarioGrupNodeList = horariosGruposElement.getElementsByTagName("HORARIO_GRUP");
-
-					// EACH HORARIO_GRUP
-					List<HorarioGrup> horarioGrupList = new ArrayList<>();
-					this.gettingValuesOfHorarioGrup(horarioGrupNodeList, horarioGrupList);
-					// log.info(horarioAsigList);
-					horariosGrupos.setHorarioGrup(horarioGrupList);
-					horarios.setHorariosGrupos(horariosGrupos);
-					// --------------------------------------------------------------------------------------------------
-
-					// --- HORARIOS HORARIOS_AULAS ONLY ONE ---
-					HorariosAulas horariosAulas = new HorariosAulas();
-
-					// --- HORARIOS HORARIOS_AULAS ELEMENT ---
-					Element horariosAulasElement = (Element) horariosElement.getElementsByTagName("HORARIOS_AULAS")
-							.item(0);
-
-					// NODELIST HORARIO_AULA
-					NodeList horarioAulaNodeList = horariosAulasElement.getElementsByTagName("HORARIO_AULA");
-
-					// EACH HORARIO_AULA
-					List<HorarioAula> horarioAulaList = new ArrayList<>();
-					this.gettingValuesOfHorarioAula(horarioAulaNodeList, horarioAulaList);
-					// log.info(horarioAulaList);
-					horariosAulas.setHorarioAula(horarioAulaList);
-					horarios.setHorariosAulas(horariosAulas);
-					// --------------------------------------------------------------------------------------------------
-
-					// --- HORARIOS HORARIOS_PROFESORES ONLY ONE ---
-					HorariosProfesores horariosProfesores = new HorariosProfesores();
-
-					// --- HORARIOS HORARIOS_AULAS ELEMENT ---
-					Element horariosProfesoresElement = (Element) horariosElement
-							.getElementsByTagName("HORARIOS_PROFESORES").item(0);
-
-					// NODELIST HORARIO_AULA
-					NodeList horarioProfNodeList = horariosProfesoresElement.getElementsByTagName("HORARIO_PROF");
-
-					// EACH HORARIO_PROF
-					List<HorarioProf> horarioProfList = new ArrayList<>();
-					this.gettingValuesOfHorarioProf(horarioProfNodeList, horarioProfList);
-					log.info(horarioAulaList.toString());
-					horariosProfesores.setHorarioProf(horarioProfList);
-					horarios.setHorariosProfesores(horariosProfesores);
 					// -------------------------------------------------------------------------------------------------------------------------------------------------
-					centro.setHorarios(horarios);
+
 					// -------------------------------------------------------------------------------------------------------------------------------------------------
 					log.info("File :" + xmlFile.getName() + " load-Done");
-					
-					//Cargamos las operaciones con base de datos
-					this.operations = new JPAOperations(this.alumnoRepo,this.cursoRepo,this.puntosRepo,this.sancionRepo,this.visitasRepo);
+
 				}
 				catch (ParserConfigurationException exception)
 				{
@@ -406,12 +355,7 @@ public class TimetableRest
 					return ResponseEntity.status(400).body(horariosException.toMap());
 				}
 
-				// --- SESSION ---------
-				session.setAttribute("storedCentro", centro);
-				log.info("UserVisits: " + centro);
-				// --- SESSION RESPONSE_ENTITY ---------
-				this.centroPdfs = centro;
-				return ResponseEntity.ok(session.getAttribute("storedCentro"));
+				return ResponseEntity.ok().build();
 			}
 			else
 			{
@@ -432,50 +376,571 @@ public class TimetableRest
 		}
 	}
 
+	// ------------------------- METODOS PARA ALMACENAR ENTIDADES DE DATOS EN BBDD.
+	// Estas entidades representan los datos basicos sin relacion entre ellos.
+
 	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Guarda los valores de los tramos horarios a partir de una lista de nodos XML.
+	 * El método recorre la lista de nodos proporcionada, extrae los atributos
+	 * necesarios para crear instancias de la entidad TimeSlotEntity, y luego guarda
+	 * todas las entidades creadas en la base de datos utilizando un repositorio.
+	 *
+	 * @param tramosHorariosNodeList la lista de nodos XML que contienen la
+	 *                               información de los tramos horarios. Cada nodo
+	 *                               debe tener atributos que correspondan a las
+	 *                               horas de inicio y fin, el número del día y el
+	 *                               identificador del tramo.
+	 */
+	private void saveValuesOfTramo(NodeList tramosHorariosNodeList)
+	{
+		List<TimeSlotEntity> listadoTramos = new ArrayList<TimeSlotEntity>();
+
+		for (int i = 0; i < tramosHorariosNodeList.getLength(); i++)
+		{
+			TimeSlotEntity newTramo = new TimeSlotEntity();
+			newTramo.setEndHour(tramosHorariosNodeList.item(i).getAttributes().item(0).getTextContent());
+			newTramo.setStartHour(tramosHorariosNodeList.item(i).getAttributes().item(1).getTextContent());
+			newTramo.setDayNumber(tramosHorariosNodeList.item(i).getAttributes().item(3).getTextContent());
+			newTramo.setNumTr(tramosHorariosNodeList.item(i).getAttributes().item(2).getTextContent());
+			listadoTramos.add(newTramo);
+		}
+
+		this.timeslotRepo.saveAllAndFlush(listadoTramos);
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Guarda los valores de los profesores a partir de una lista de nodos XML. El
+	 * método recorre la lista de nodos proporcionada, extrae los atributos
+	 * necesarios para crear instancias de la entidad ProfesorEntity, y luego guarda
+	 * todas las entidades creadas en la base de datos utilizando un repositorio.
+	 *
+	 * La información extraída incluye: - Abreviatura del profesor. - Número interno
+	 * del profesor (numIntPR). - Nombre completo, dividido en nombre, primer
+	 * apellido y segundo apellido.
+	 *
+	 * @param profesoresNodeList la lista de nodos XML que contienen la información
+	 *                           de los profesores. Cada nodo debe tener atributos
+	 *                           que representen la abreviatura, el número interno,
+	 *                           y el nombre completo en formato "Apellidos,
+	 *                           Nombre".
+	 */
+	private void saveValuesOfProfesor(NodeList profesoresNodeList)
+	{
+		// Crea una lista para rellenar con entidades profesor.
+		List<ProfesorEntity> listadoProfesores = new ArrayList<>();
+
+		// Por cada elemento profesor en el nodo xml
+		for (int i = 0; i < profesoresNodeList.getLength(); i++)
+		{
+			// Crea un nuevo profesor.
+			ProfesorEntity newProfesor = new ProfesorEntity();
+
+			// Asigna los valores simples de Abreviatura e Identificador numIntPr.
+			newProfesor.setAbreviatura(profesoresNodeList.item(i).getAttributes().item(0).getTextContent());
+			newProfesor.setNumIntPR(profesoresNodeList.item(i).getAttributes().item(2).getTextContent());
+
+			// Recoge nombre completo y lo separa en un string de cadenas.
+			String nombreCompleto = profesoresNodeList.item(i).getAttributes().item(1).getTextContent();
+			String[] nombreCompletoSpit = nombreCompleto.split(",");
+			String[] apellidosSplit = nombreCompletoSpit[0].split(" ");
+
+			// Configura nombre y apellidos basandose en el array de cadenas.
+			newProfesor.setNombre(nombreCompletoSpit[nombreCompletoSpit.length - 1].trim());
+			newProfesor.setPrimerApellido(apellidosSplit[0].trim());
+			newProfesor.setSegundoApellido(apellidosSplit[1].trim());
+
+			// Añade profesor actual al listado de profesores.
+			listadoProfesores.add(newProfesor);
+		}
+		// Almacena listado completo en BBDD.
+		this.profesorRepo.saveAll(listadoProfesores);
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Guarda los valores de las aulas a partir de una lista de nodos XML. El método
+	 * recorre la lista de nodos proporcionada, extrae los atributos necesarios para
+	 * crear instancias de la entidad AulaEntity, y luego guarda todas las entidades
+	 * creadas en la base de datos utilizando un repositorio.
+	 *
+	 * La información extraída incluye: - Abreviatura del aula. - Número interno del
+	 * aula (numIntAu) (identificador). - Nombre del aula.
+	 *
+	 * @param aulasNodeList la lista de nodos XML que contienen la información de
+	 *                      las aulas. Cada nodo debe tener atributos que
+	 *                      representen la abreviatura, el número interno y el
+	 *                      nombre del aula.
+	 */
+	private void saveValuesOfAula(NodeList aulasNodeList)
+	{
+		// Crea una nueva lista para ir almacenando las aulas que rellena.
+		List<AulaEntity> listadoDeAulas = new ArrayList<>();
+
+		// Por cada elemento aula en el nodo.
+		for (int i = 0; i < aulasNodeList.getLength(); i++)
+		{
+			// Crea un nuevo objeto aula.
+			AulaEntity aulaEntidad = new AulaEntity();
+
+			// Configura abreviatura.
+			aulaEntidad.setAbreviatura(aulasNodeList.item(i).getAttributes().item(0).getTextContent());
+
+			// Configura identificador.
+			aulaEntidad.setNumIntAu(aulasNodeList.item(i).getAttributes().item(2).getTextContent());
+
+			// Configura nombre del aula.
+			aulaEntidad.setNombre(aulasNodeList.item(i).getAttributes().item(1).getTextContent());
+
+			// Agrega al listado de aulas.
+			listadoDeAulas.add(aulaEntidad);
+		}
+
+		// Almacena todas las aulas listadas en BBDD.
+		this.aulaRepo.saveAllAndFlush(listadoDeAulas);
+		log.debug("Aulas almacenadas en BBDD");
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Guarda los valores de los grupos a partir de una lista de nodos XML. El
+	 * método recorre la lista de nodos proporcionada, extrae los atributos
+	 * necesarios para crear instancias de la entidad {@code GrupoEntity}, y luego
+	 * guarda todas las entidades creadas en la base de datos utilizando un
+	 * repositorio.
+	 *
+	 * La información extraída incluye: - Abreviatura del grupo. - Número interno
+	 * del grupo (numIntGr). - Nombre del grupo.
+	 *
+	 * @param gruposNodeList la lista de nodos XML que contienen la información de
+	 *                       los grupos. Cada nodo debe tener atributos que
+	 *                       representen la abreviatura, el número interno y el
+	 *                       nombre del grupo.
+	 */
+	private void saveValuesOfGrupo(NodeList gruposNodeList)
+	{
+		List<GrupoEntity> listadoGrupos = new ArrayList<>();
+
+		for (int i = 0; i < gruposNodeList.getLength(); i++)
+		{
+			GrupoEntity newGrupo = new GrupoEntity();
+			newGrupo.setAbreviatura(gruposNodeList.item(i).getAttributes().item(0).getTextContent());
+			newGrupo.setNumIntGr(gruposNodeList.item(i).getAttributes().item(2).getTextContent());
+			newGrupo.setNombre(gruposNodeList.item(i).getAttributes().item(1).getTextContent());
+
+			listadoGrupos.add(newGrupo);
+		}
+		this.grupoRepo.saveAllAndFlush(listadoGrupos);
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Guarda los valores de las asignaturas a partir de una lista de nodos XML. El
+	 * método recorre la lista de nodos proporcionada, extrae los atributos
+	 * necesarios para crear instancias de la entidad AsignaturaEntity, y luego
+	 * guarda todas las entidades creadas en la base de datos utilizando un
+	 * repositorio.
+	 *
+	 * La información extraída incluye: - Abreviatura de la asignatura. - Número
+	 * identificacdor de la asignatura (numIntAs). - Nombre de la asignatura.
+	 *
+	 * @param asignaturasNodeList la lista de nodos XML que contienen la información
+	 *                            de las asignaturas. Cada nodo debe tener atributos
+	 *                            que representen la abreviatura, el número interno
+	 *                            y el nombre de la asignatura.
+	 */
+	private void saveValuesOfAsignatura(NodeList asignaturasNodeList)
+	{
+		List<AsignaturaEntity> listadoAsignaturas = new ArrayList<>();
+
+		for (int i = 0; i < asignaturasNodeList.getLength(); i++)
+		{
+			AsignaturaEntity newAsignatura = new AsignaturaEntity();
+			newAsignatura.setAbreviatura(asignaturasNodeList.item(i).getAttributes().item(0).getTextContent());
+			newAsignatura.setNumIntAs(asignaturasNodeList.item(i).getAttributes().item(2).getTextContent());
+			newAsignatura.setNombre(asignaturasNodeList.item(i).getAttributes().item(1).getTextContent());
+
+			listadoAsignaturas.add(newAsignatura);
+		}
+		this.asignaturaRepo.saveAllAndFlush(listadoAsignaturas);
+	}
+
+	// ---------------- METODOS PARA ALMACENAR HORARIOS EN BBDD.
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Procesa y guarda una actividad asociada a cada grupo presente en un mapa de
+	 * nodos.
+	 * 
+	 * @param actividadEntity        la entidad de la actividad que será asociada a
+	 *                               los grupos.
+	 * @param gruposActividadNodeMap un mapa de nodos que contiene los grupos
+	 *                               relacionados con la actividad. Cada nodo
+	 *                               representa un grupo único.
+	 * 
+	 *                               <p>
+	 *                               Funcionamiento:
+	 *                               </p>
+	 *                               <ul>
+	 *                               <li>Itera sobre cada nodo del mapa de grupos de
+	 *                               actividad.</li>
+	 *                               <li>Para cada nodo:
+	 *                               <ul>
+	 *                               <li>Obtiene la información del grupo.</li>
+	 *                               <li>Asocia la actividad al grupo mediante el
+	 *                               método
+	 *                               {@link #saveActividadWithGroup(Node, ActividadEntity)}.</li>
+	 *                               </ul>
+	 *                               </li>
+	 *                               </ul>
+	 * 
+	 *                               <p>
+	 *                               Este método garantiza que una entrada de
+	 *                               actividad sea creada para cada grupo asociado,
+	 *                               preservando la relación entre actividades y
+	 *                               grupos.
+	 *                               </p>
+	 * 
+	 * @see ActividadEntity
+	 * @see #saveActividadWithGroup(Node, ActividadEntity)
+	 */
+	private void saveValuesOfGruposActividadAttrs(ActividadEntity actividadEntity, NamedNodeMap gruposActividadNodeMap)
+	{
+		// Por cada grupo en el nodo de grupos.
+		for (int i = 0; i < gruposActividadNodeMap.getLength(); i++)
+		{
+			// Asigna nodo.
+			Node node = gruposActividadNodeMap.item(i);
+
+			// Guarda una instancia de la actividad con el grupo del iteración actual.
+			this.saveActividadWithGroup(node, actividadEntity);
+		}
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Asocia una actividad a un grupo específico y guarda la relación en la base de
+	 * datos.
+	 * 
+	 * @param node            el nodo XML que representa un grupo. Su contenido debe
+	 *                        incluir el identificador del grupo.
+	 * @param actividadEntity la entidad de actividad que será asociada al grupo.
+	 * 
+	 *                        <p>
+	 *                        Funcionamiento:
+	 *                        </p>
+	 *                        <ul>
+	 *                        <li>Verifica si el nombre del nodo contiene la palabra
+	 *                        clave "grupo_".</li>
+	 *                        <li>Recupera el identificador del grupo desde el
+	 *                        contenido del nodo.</li>
+	 *                        <li>Busca en el repositorio la entidad
+	 *                        {@link GrupoEntity} correspondiente al
+	 *                        identificador.</li>
+	 *                        <li>Asocia la entidad del grupo a la actividad
+	 *                        mediante
+	 *                        {@link ActividadEntity#setGrupo(GrupoEntity)}.</li>
+	 *                        <li>Guarda la actividad actualizada en la base de
+	 *                        datos utilizando el repositorio de actividades.</li>
+	 *                        <li>Registra la operación mediante un mensaje de
+	 *                        depuración.</li>
+	 *                        </ul>
+	 * 
+	 *                        <p>
+	 *                        <strong>Nota:</strong> Este método crea una nueva
+	 *                        entrada de actividad para cada grupo asociado. Esto
+	 *                        reemplaza la lógica anterior de reutilizar una
+	 *                        actividad única con múltiples referencias a grupos.
+	 *                        </p>
+	 * 
+	 * @throws NoSuchElementException si no se encuentra el grupo en el repositorio
+	 *                                {@code grupoRepo}.
+	 * 
+	 * @see ActividadEntity
+	 * @see GrupoEntity
+	 * @see ActividadRepository
+	 * @see GrupoRepository
+	 */
+	private void saveActividadWithGroup(Node node, ActividadEntity actividadEntity)
+	{
+		if (node.getNodeName().contains("grupo_"))
+		{
+			// Recupera el ID.
+			String idGrupo = node.getTextContent();
+			// Busca el grupo correspondiente al ID recuperado.
+			GrupoEntity nuevoGrupo = grupoRepo.findById(idGrupo).get();
+
+			// Setea el grupo a la nueva actividad.
+			actividadEntity.setGrupo(nuevoGrupo);
+
+			// Guarda en base de datos.
+			this.actividadRepo.saveAndFlush(actividadEntity);
+			log.debug("Grupo asignado a actividad: {}", nuevoGrupo.toString());
+		}
+	}
+
+	/**
+	 * Autor: David Jason G.
+	 * 
+	 * Procesa una lista de nodos XML que representan horarios de asignaturas,
+	 * recupera datos de las actividades asociadas y las guarda en la base de datos
+	 * (SOLO ALMACENA REGISTROS DE LA ACTIVIDAD).
+	 *
+	 * @param horarioAsigNodeList una lista de nodos XML que representan horarios de
+	 *                            asignaturas. Cada nodo debe contener datos de
+	 *                            actividades asociadas.
+	 * @throws Exception si ocurre un error durante el procesamiento, como la falta
+	 *                   de una entidad requerida (Asignatura, Aula, Profesor o
+	 *                   Tramo) en la base de datos.
+	 *
+	 *                   <p>
+	 *                   Funcionamiento:
+	 *                   </p>
+	 *                   <ul>
+	 *                   <li>Por cada nodo en la lista de horarios de
+	 *                   asignaturas:</li>
+	 *                   <ul>
+	 *                   <li>Obtiene los nodos de actividades asociadas al horario
+	 *                   de asignatura.</li>
+	 *                   <li>Por cada actividad encontrada:</li>
+	 *                   <ul>
+	 *                   <li>Crea una instancia de {@link ActividadEntity} y asigna
+	 *                   sus atributos basándose en la información de los nodos XML
+	 *                   y los repositorios.</li>
+	 *                   <li>Recupera entidades relacionadas (Aula, Profesor, Tramo,
+	 *                   Asignatura) y las asigna a la actividad. Lanza una
+	 *                   excepción si alguna de estas entidades no se encuentra en
+	 *                   la base de datos.</li>
+	 *                   <li>Obtiene los datos de los grupos asociados a la
+	 *                   actividad y utiliza el método
+	 *                   {@link #saveValuesOfGruposActividadAttrs(ActividadEntity, NamedNodeMap)}
+	 *                   para procesarlos.</li>
+	 *                   </ul>
+	 *                   </ul>
+	 *                   </ul>
+	 *
+	 *                   <p>
+	 *                   <strong>Nota:</strong> Las entidades relacionadas son
+	 *                   críticas para completar el registro de la actividad. Si
+	 *                   alguna de ellas no está presente en la base de datos, el
+	 *                   método lanza una excepción para garantizar la integridad de
+	 *                   los datos.
+	 *                   </p>
+	 *
+	 * @see ActividadEntity
+	 * @see AsignaturaEntity
+	 * @see AulaEntity
+	 * @see ProfesorEntity
+	 * @see TimeSlotEntity
+	 * @see #saveValuesOfGruposActividadAttrs(ActividadEntity, NamedNodeMap)
+	 */
+	private void saveValuesOfHorarioAsig(NodeList horarioAsigNodeList) throws Exception
+	{
+		// Por cada elemento en el nodemap de horario asignatura.
+		for (int i = 0; i < horarioAsigNodeList.getLength(); i++)
+		{
+
+			// Instrucciones para recoger el nodelist de Actividad.
+			Element horarioAsigElement = (Element) horarioAsigNodeList.item(i);
+			NodeList actividadNodeList = horarioAsigElement.getElementsByTagName("ACTIVIDAD");
+
+			// POR CADA ACTIVIDAD EN EL NODELIST DE ACTIVIDADES DE HORARIO ASIGNATURAS.
+			for (int j = 0; j < actividadNodeList.getLength(); j++)
+			{
+				// Crea una nuevo objeto de actividad en bbdd (nuevo registro actividad).
+				ActividadEntity actividadEntity = new ActividadEntity();
+
+				// ASIGNACIÓN DE REFERENCIAS A OTRAS ENTIDADES EN EL REGISTRO TRATADO EN
+				// ITERACIÓN ACTUAL.
+
+				// Referencia al AULA de la actividad (referencia a clave primaria).
+				String aulaId = actividadNodeList.item(j).getAttributes().item(0).getTextContent();
+				Optional<AulaEntity> aula = aulaRepo.findById(aulaId);
+				// aqui peta
+				if (!aula.isPresent())
+				{
+					String mensaje = "El AULA referenciada en saveValuesOfHorarioAsig no encontrada.";
+					log.error(mensaje);
+					throw new Exception(mensaje);
+				}
+				actividadEntity.setAula(aula.get());
+
+				// Asigna atributo de Numero Actividad.
+				actividadEntity.setNumAct(actividadNodeList.item(j).getAttributes().item(1).getTextContent());
+
+				// Asigna atributo de Numero Unidad
+				actividadEntity.setNumUn(actividadNodeList.item(j).getAttributes().item(2).getTextContent());
+
+				// Referencia al PROFESOR de la actividad (referencia a clave primaria).
+				String profeId = actividadNodeList.item(j).getAttributes().item(3).getTextContent();
+				Optional<ProfesorEntity> profe = profesorRepo.findById(profeId);
+				if (!profe.isPresent())
+				{
+					String mensaje = "El PROFESOR referenciado en saveValuesOfHorarioAsig no encontrado.";
+					log.error(mensaje);
+					throw new Exception(mensaje);
+				}
+				actividadEntity.setProfesor(profe.get());
+
+				// Referencia al TRAMO HORARIO de la actividad (referencia a clave primaria).
+				String tramoId = actividadNodeList.item(j).getAttributes().item(4).getTextContent();
+				Optional<TimeSlotEntity> tramo = timeslotRepo.findById(tramoId);
+				if (!tramo.isPresent())
+				{
+					String mensaje = "El TRAMO HORARIO referenciado en saveValuesOfHorarioAsig no encontrado.";
+					log.error(mensaje);
+					throw new Exception(mensaje);
+				}
+				actividadEntity.setTramo(tramo.get());
+
+				// ATENCION: NO ES EL MISMO MECANISMO QUE PARA EL RESTO DE REFERENCIAS.
+				// Recupera el ID que identifica la asignatura de la iteración actual.
+				String asignaturaId = horarioAsigNodeList.item(i).getAttributes().item(0).getTextContent();
+				Optional<AsignaturaEntity> asignatura = asignaturaRepo.findById(asignaturaId);
+				if (!asignatura.isPresent())
+				{
+					String mensaje = "La ASIGNATURA referenciada en saveValuesOfHorarioAsig no encontrada.";
+					log.error(mensaje);
+					throw new Exception(mensaje);
+				}
+				actividadEntity.setAsignatura(asignatura.get());
+
+				// recoge el nodelist de grupos actividad.
+				NamedNodeMap gruposActividadNodeMap = ((Element) actividadNodeList.item(j))
+						.getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes();
+
+				this.saveValuesOfGruposActividadAttrs(actividadEntity, gruposActividadNodeMap);
+			}
+
+		}
+	}
+
+	// ------------------ METODOS DE RECUPERACIÓN DE DATOS.
+
+	// Metodo de utilidad para rellenar el listado de horarios profesor.
+	public void fillHorarioProfValues(List<HorarioProf> listadoHorarios)
+	{
+		// Por cada profesor en el listado de profesores almacenado en bbdd.
+		for (ProfesorEntity profe : this.profesorRepo.findAll())
+		{
+
+			List<Actividad> actividadesList = actividadRepo.recuperaListadoActividades();
+			String totAc = String.valueOf(actividadesList.size());
+
+			// Crea nuevo horario profesor.
+			HorarioProf horarioProfe = new HorarioProf();
+
+			// Rellena datos.
+			horarioProfe.setActividad(actividadesList);
+			horarioProfe.setHorNumIntPR(profe.getNumIntPR());
+			horarioProfe.setTotUn("0"); // Revisar.
+			horarioProfe.setTotAC(totAc);
+
+			// Agrega el horario del profesor al listado.
+			listadoHorarios.add(horarioProfe);
+		}
+	}
+
+	public void fillHorarioProfValuesById(List<HorarioProf> listadoHorarios, String profesorId)
+	{
+
+		// List<Actividad> actividadesList = actividadRepo.recuperaListadoActividades();
+		List<Actividad> actividadesList = actividadRepo.recuperaListadoActividadesPorIdProfesor(profesorId);
+
+		String totAc = String.valueOf(actividadesList.size());
+
+		// Crea nuevo horario profesor.
+		HorarioProf horarioProfe = new HorarioProf();
+
+		// Rellena datos.
+		horarioProfe.setActividad(actividadesList);
+		horarioProfe.setHorNumIntPR(profesorId);
+		horarioProfe.setTotUn("0"); // Revisar.
+		horarioProfe.setTotAC(totAc);
+
+		// Agrega el horario del profesor al listado.
+		listadoHorarios.add(horarioProfe);
+
+	}
+
+	// Metodo para rellenar el listado de horarios grupo.
+	public void fillHorarioGrupoValues(List<HorarioGrup> listadoHorariosGrupo)
+	{
+		for (GrupoEntity grupo : this.grupoRepo.findAll())
+		{
+
+			List<Actividad> listadoActividades = actividadRepo.recuperaListadoActividades();
+
+			String totAc = String.valueOf(listadoActividades.size());
+
+			// Crea nuevo horario profesor.
+			HorarioGrup horarioGrupo = new HorarioGrup();
+
+			// Rellena datos.
+			horarioGrupo.setActividad(listadoActividades);
+			horarioGrupo.setHorNumIntGr(grupo.getNumIntGr());
+			horarioGrupo.setTotAC(totAc);
+			horarioGrupo.setTotUn("0"); // REVISAR
+
+			// Agrega el horario del grupo al listado.
+			listadoHorariosGrupo.add(horarioGrupo);
+		}
+	}
+
+	/**
+	 * Recupera un listado de profesoresDTO a partir de una llamada al repositorio.
 	 * 
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping( value = "/get/teachers", produces = "application/json")
-    public ResponseEntity<?> getProfesores(HttpSession session)
-    {
-		try
-		{	
-			//GET THE ATTRIBUTE CENTRO IN SESSION
-			//Centro centro = (Centro) session.getAttribute("storedCentro");
-			//LIST TO SAVE THE TEACHERS
-			List<Profesor> profesores = this.centroPdfs.getDatos().getProfesores().getProfesor();
-			return ResponseEntity.ok().body(this.util.ordenarLista(profesores));   	
-		}
-		catch (Exception exception)
-		{     	
-			String error = "Server Error";
-			HorariosError horariosError = new HorariosError(500, error,exception);
-			log.error(error,exception);
-			return ResponseEntity.status(500).body(horariosError);	
-		}
-    }
+	@RequestMapping(value = "/get/teachers", produces = "application/json")
+	public ResponseEntity<?> getProfesores(HttpSession session)
 
+	{
+		try
+		{
+			List<Profesor> profesores = this.profesorRepo.recuperaListadoProfesores();
+			// Devuelve un listado ordenado de profesores.
+			return ResponseEntity.ok().body(this.util.ordenarLista(profesores));
+
+		} catch (Exception exception)
+		{
+			String error = "Server Error";
+			HorariosError horariosError = new HorariosError(500, error, exception);
+			log.error(error, exception);
+			return ResponseEntity.status(500).body(horariosError);
+		}
+	}
+
+// depende de carga de fichero csv.
 	/**
 	 * Method getListStudentsAlphabetically
 	 *
 	 * @return
 	 */
-	@RequestMapping( value = "/get/sortstudents", produces = "application/json")
+	@RequestMapping(value = "/get/sortstudents", produces = "application/json")
 	public ResponseEntity<?> getListStudentsAlphabetically()
 	{
 		try
 		{
-			if(this.students.isEmpty())
+			List <Student> listadoEstudiantes = iStudentsRepo.recuperaListadoEstudiantes();
+			if (listadoEstudiantes.isEmpty())
 			{
-				HorariosError error = new HorariosError(400,"No se han cargado estudiantes");
+				HorariosError error = new HorariosError(400, "No se han cargado estudiantes");
 				return ResponseEntity.status(404).body(error.toMap());
 			}
-			
-			return ResponseEntity.ok().body(this.util.ordenarLista(this.students));
-		}
-		catch (Exception exception)
+
+			return ResponseEntity.ok().body(this.util.ordenarLista(listadoEstudiantes));
+
+		} catch (Exception exception)
 		{
 			// -- CATCH ANY ERROR ---
 			String error = "Server Error";
@@ -486,449 +951,14 @@ public class TimetableRest
 	}
 
 	/**
-	 * Method gettingValuesOfHorarioProf
-	 *
-	 * @param horarioProfNodeList
-	 * @param horarioProfList
-	 */
-	private void gettingValuesOfHorarioProf(NodeList horarioProfNodeList, List<HorarioProf> horarioProfList)
-	{
-		for (int i = 0; i < horarioProfNodeList.getLength(); i++)
-		{
-			HorarioProf newHorarioProf = new HorarioProf();
-			newHorarioProf.setHorNumIntPR(horarioProfNodeList.item(i).getAttributes().item(0).getTextContent());
-			newHorarioProf.setTotAC(horarioProfNodeList.item(i).getAttributes().item(1).getTextContent());
-			newHorarioProf.setTotUn(horarioProfNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			// GETTING ELEMENT HORARIO_PROF(i)
-			Element horarioProfElement = (Element) horarioProfNodeList.item(i);
-			// GETTING THE ACTIVIDAD NODE LIST
-			NodeList actividadNodeList = horarioProfElement.getElementsByTagName("ACTIVIDAD");
-
-			// --- ACTIVIDAD LIST ---
-			List<Actividad> actividadList = new ArrayList<>();
-			for (int j = 0; j < actividadNodeList.getLength(); j++)
-			{
-				Actividad newActividad = new Actividad();
-				newActividad.setAsignatura(actividadNodeList.item(j).getAttributes().item(0).getTextContent());
-				newActividad.setNumAct(actividadNodeList.item(j).getAttributes().item(2).getTextContent());
-				newActividad.setNumUn(actividadNodeList.item(j).getAttributes().item(3).getTextContent());
-				newActividad.setTramo(actividadNodeList.item(j).getAttributes().item(4).getTextContent());
-				newActividad.setAula(actividadNodeList.item(j).getAttributes().item(1).getTextContent());
-
-				// --- GETTING GRUPOS ACTIVIDAD ---
-				GruposActividad gruposActividad = new GruposActividad();
-				// ((Element)actividadNodeList.item(j)).getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes().item(0).getTextContent()
-
-				// --- IF THE ELEMENT GRUPOS_ACTIVIDAD HAS 1 , 2, 3 , 4 OR 5 ATTRIBUTES---
-				NamedNodeMap gruposActividadNodeMap = ((Element) actividadNodeList.item(j))
-						.getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes();
-				this.gettingValuesOfGruposActividadAttrs(actividadList, newActividad, gruposActividad,
-						gruposActividadNodeMap);
-			}
-			// --- ADD ACTIVIDAD LIST TO HORARIO_AULA
-			newHorarioProf.setActividad(actividadList);
-			log.info(actividadList.toString());
-
-			// -- ADD HORARIO_AULA TO LIST ---
-			horarioProfList.add(newHorarioProf);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfHorarioAula
-	 *
-	 * @param horarioAulaNodeList
-	 * @param horarioAulaList
-	 */
-	private void gettingValuesOfHorarioAula(NodeList horarioAulaNodeList, List<HorarioAula> horarioAulaList)
-	{
-		for (int i = 0; i < horarioAulaNodeList.getLength(); i++)
-		{
-			HorarioAula newHorarioAula = new HorarioAula();
-			newHorarioAula.setHorNumIntAu(horarioAulaNodeList.item(i).getAttributes().item(0).getTextContent());
-			newHorarioAula.setTotAC(horarioAulaNodeList.item(i).getAttributes().item(1).getTextContent());
-			newHorarioAula.setTotUn(horarioAulaNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			// GETTING ELEMENT HORARIO AULA (i)
-			Element horarioAulaElement = (Element) horarioAulaNodeList.item(i);
-			// GETTING THE ACTIVIDAD NODE LIST
-			NodeList actividadNodeList = horarioAulaElement.getElementsByTagName("ACTIVIDAD");
-
-			// --- ACTIVIDAD LIST ---
-			List<Actividad> actividadList = new ArrayList<>();
-			for (int j = 0; j < actividadNodeList.getLength(); j++)
-			{
-				Actividad newActividad = new Actividad();
-				newActividad.setAsignatura(actividadNodeList.item(j).getAttributes().item(0).getTextContent());
-				newActividad.setNumAct(actividadNodeList.item(j).getAttributes().item(1).getTextContent());
-				newActividad.setNumUn(actividadNodeList.item(j).getAttributes().item(2).getTextContent());
-				newActividad.setTramo(actividadNodeList.item(j).getAttributes().item(4).getTextContent());
-				newActividad.setProfesor(actividadNodeList.item(j).getAttributes().item(3).getTextContent());
-
-				// --- GETTING GRUPOS ACTIVIDAD ---
-				GruposActividad gruposActividad = new GruposActividad();
-				// ((Element)actividadNodeList.item(j)).getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes().item(0).getTextContent()
-
-				// --- IF THE ELEMENT GRUPOS_ACTIVIDAD HAS 1 , 2, 3 , 4 OR 5 ATTRIBUTES---
-				NamedNodeMap gruposActividadNodeMap = ((Element) actividadNodeList.item(j))
-						.getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes();
-				this.gettingValuesOfGruposActividadAttrs(actividadList, newActividad, gruposActividad,
-						gruposActividadNodeMap);
-			}
-			// --- ADD ACTIVIDAD LIST TO HORARIO_AULA
-			newHorarioAula.setActividad(actividadList);
-			log.info(actividadList.toString());
-
-			// -- ADD HORARIO_AULA TO LIST ---
-			horarioAulaList.add(newHorarioAula);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfHorarioGrup
-	 *
-	 * @param horarioGrupNodeList
-	 * @param horarioGrupList
-	 */
-	private void gettingValuesOfHorarioGrup(NodeList horarioGrupNodeList, List<HorarioGrup> horarioGrupList)
-	{
-		for (int i = 0; i < horarioGrupNodeList.getLength(); i++)
-		{
-			HorarioGrup newHorarioGrup = new HorarioGrup();
-			newHorarioGrup.setHorNumIntGr(horarioGrupNodeList.item(i).getAttributes().item(0).getTextContent());
-			newHorarioGrup.setTotAC(horarioGrupNodeList.item(i).getAttributes().item(1).getTextContent());
-			newHorarioGrup.setTotUn(horarioGrupNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			// GETTING ELEMENT HORARIO_GRUP (i)
-			Element horarioGrupElement = (Element) horarioGrupNodeList.item(i);
-			// GETTING THE ACTIVIDAD NODE LIST
-			NodeList actividadNodeList = horarioGrupElement.getElementsByTagName("ACTIVIDAD");
-
-			// --- ACTIVIDAD LIST ---
-			List<Actividad> actividadList = new ArrayList<>();
-			for (int j = 0; j < actividadNodeList.getLength(); j++)
-			{
-				Actividad newActividad = new Actividad();
-				newActividad.setAula(actividadNodeList.item(j).getAttributes().item(1).getTextContent());
-				newActividad.setNumAct(actividadNodeList.item(j).getAttributes().item(2).getTextContent());
-				newActividad.setNumUn(actividadNodeList.item(j).getAttributes().item(3).getTextContent());
-				newActividad.setTramo(actividadNodeList.item(j).getAttributes().item(5).getTextContent());
-				newActividad.setProfesor(actividadNodeList.item(j).getAttributes().item(4).getTextContent());
-				newActividad.setAsignatura(actividadNodeList.item(j).getAttributes().item(0).getTextContent());
-
-				actividadList.add(newActividad);
-			}
-			// --- ADD ACTIVIDAD LIST TO HORARIO_GRUP
-			newHorarioGrup.setActividad(actividadList);
-			log.info(actividadList.toString());
-
-			// -- ADD HORARIO_GRUP TO LIST ---
-			horarioGrupList.add(newHorarioGrup);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfHorarioAsig
-	 *
-	 * @param horarioAsigNodeList
-	 * @param horarioAsigList
-	 */
-	private void gettingValuesOfHorarioAsig(NodeList horarioAsigNodeList, List<HorarioAsig> horarioAsigList)
-	{
-		for (int i = 0; i < horarioAsigNodeList.getLength(); i++)
-		{
-			HorarioAsig newHorarioAsig = new HorarioAsig();
-			newHorarioAsig.setHorNumIntAs(horarioAsigNodeList.item(i).getAttributes().item(0).getTextContent());
-			newHorarioAsig.setTotAC(horarioAsigNodeList.item(i).getAttributes().item(1).getTextContent());
-			newHorarioAsig.setTotUn(horarioAsigNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			// GETTING ELEMENT HORARIO ASIG (i)
-			Element horarioAsigElement = (Element) horarioAsigNodeList.item(i);
-			// GETTING THE ACTIVIDAD NODE LIST
-			NodeList actividadNodeList = horarioAsigElement.getElementsByTagName("ACTIVIDAD");
-
-			// --- ACTIVIDAD LIST ---
-			List<Actividad> actividadList = new ArrayList<>();
-			this.gettingValuesOfActividad(actividadNodeList, actividadList);
-			// --- ADD ACTIVIDAD LIST TO HORARIO_ASIG
-			newHorarioAsig.setActividad(actividadList);
-			log.info(actividadList.toString());
-
-			// -- ADD HORARIO_ASIG TO LIST ---
-			horarioAsigList.add(newHorarioAsig);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfActividad
-	 *
-	 * @param actividadNodeList
-	 * @param actividadList
-	 */
-	private void gettingValuesOfActividad(NodeList actividadNodeList, List<Actividad> actividadList)
-	{
-		for (int j = 0; j < actividadNodeList.getLength(); j++)
-		{
-			Actividad newActividad = new Actividad();
-			newActividad.setAula(actividadNodeList.item(j).getAttributes().item(0).getTextContent());
-			newActividad.setNumAct(actividadNodeList.item(j).getAttributes().item(1).getTextContent());
-			newActividad.setNumUn(actividadNodeList.item(j).getAttributes().item(2).getTextContent());
-			newActividad.setTramo(actividadNodeList.item(j).getAttributes().item(4).getTextContent());
-			newActividad.setProfesor(actividadNodeList.item(j).getAttributes().item(3).getTextContent());
-
-			// --- GETTING GRUPOS ACTIVIDAD ---
-			GruposActividad gruposActividad = new GruposActividad();
-			// ((Element)actividadNodeList.item(j)).getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes().item(0).getTextContent()
-
-			// --- IF THE ELEMENT GRUPOS_ACTIVIDAD HAS 1 , 2, 3 , 4 OR 5 ATTRIBUTES---
-			NamedNodeMap gruposActividadNodeMap = ((Element) actividadNodeList.item(j))
-					.getElementsByTagName("GRUPOS_ACTIVIDAD").item(0).getAttributes();
-			this.gettingValuesOfGruposActividadAttrs(actividadList, newActividad, gruposActividad,
-					gruposActividadNodeMap);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfGruposActividadAttrs
-	 *
-	 * @param actividadList
-	 * @param newActividad
-	 * @param gruposActividad
-	 * @param gruposActividadNodeMap
-	 */
-	private void gettingValuesOfGruposActividadAttrs(List<Actividad> actividadList, Actividad newActividad,
-			GruposActividad gruposActividad, NamedNodeMap gruposActividadNodeMap)
-	{
-		if (gruposActividadNodeMap.getLength() == 1)
-		{
-			// 1 ATTR CASE
-			Node node = gruposActividadNodeMap.item(0);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, node);
-
-		}
-		if (gruposActividadNodeMap.getLength() == 2)
-		{
-			// 2 ATTR CASE
-			Node nodeOne = gruposActividadNodeMap.item(0);
-			Node nodeTwo = gruposActividadNodeMap.item(1);
-
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeOne);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeTwo);
-
-		}
-		if (gruposActividadNodeMap.getLength() == 3)
-		{
-			// 3 ATTR CASE
-			Node nodeOne = gruposActividadNodeMap.item(0);
-			Node nodeTwo = gruposActividadNodeMap.item(1);
-			Node nodeThree = gruposActividadNodeMap.item(2);
-
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeOne);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeTwo);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeThree);
-
-		}
-		if (gruposActividadNodeMap.getLength() == 4)
-		{
-			// 4 ATTR CASE
-			Node nodeOne = gruposActividadNodeMap.item(0);
-			Node nodeTwo = gruposActividadNodeMap.item(1);
-			Node nodeThree = gruposActividadNodeMap.item(2);
-			Node nodeFour = gruposActividadNodeMap.item(3);
-
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeOne);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeTwo);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeThree);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeFour);
-
-		}
-		if (gruposActividadNodeMap.getLength() == 5)
-		{
-			// 5 ATTR CASE
-			Node nodeOne = gruposActividadNodeMap.item(0);
-			Node nodeTwo = gruposActividadNodeMap.item(1);
-			Node nodeThree = gruposActividadNodeMap.item(2);
-			Node nodeFour = gruposActividadNodeMap.item(3);
-			Node nodeFive = gruposActividadNodeMap.item(4);
-
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeOne);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeTwo);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeThree);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeFour);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeFive);
-
-		}
-		if (gruposActividadNodeMap.getLength() == 6)
-		{
-			// 6 ATTR CASE
-			Node nodeOne = gruposActividadNodeMap.item(0);
-			Node nodeTwo = gruposActividadNodeMap.item(1);
-			Node nodeThree = gruposActividadNodeMap.item(2);
-			Node nodeFour = gruposActividadNodeMap.item(3);
-			Node nodeFive = gruposActividadNodeMap.item(4);
-			Node nodeSix = gruposActividadNodeMap.item(5);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeOne);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeTwo);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeThree);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeFour);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeFive);
-			gruposActividad = this.getGruposActividadAttributeTexts(gruposActividad, nodeSix);
-		}
-		newActividad.setGruposActividad(gruposActividad);
-		log.info(gruposActividad.toString());
-		actividadList.add(newActividad);
-	}
-
-	/**
-	 * Method gettingValuesOfTramo
-	 *
-	 * @param tramosHorariosNodeList
-	 * @param tramosList
-	 */
-	private void gettingValuesOfTramo(NodeList tramosHorariosNodeList, List<TimeSlot> tramosList)
-	{
-		for (int i = 0; i < tramosHorariosNodeList.getLength(); i++)
-		{
-			TimeSlot newTramo = new TimeSlot();
-			newTramo.setEndHour(tramosHorariosNodeList.item(i).getAttributes().item(0).getTextContent());
-			newTramo.setStartHour(tramosHorariosNodeList.item(i).getAttributes().item(1).getTextContent());
-			newTramo.setDayNumber(tramosHorariosNodeList.item(i).getAttributes().item(3).getTextContent());
-			newTramo.setNumTr(tramosHorariosNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			tramosList.add(newTramo);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfProfesor
-	 *
-	 * @param profesoresNodeList
-	 * @param profesoresList
-	 */
-	private void gettingValuesOfProfesor(NodeList profesoresNodeList, List<Profesor> profesoresList)
-	{
-		for (int i = 0; i < profesoresNodeList.getLength(); i++)
-		{
-			Profesor newProfesor = new Profesor();
-			newProfesor.setAbreviatura(profesoresNodeList.item(i).getAttributes().item(0).getTextContent());
-			newProfesor.setNumIntPR(profesoresNodeList.item(i).getAttributes().item(2).getTextContent());
-
-			// --- GETTING FULL NAME ---
-			String nombreCompleto = profesoresNodeList.item(i).getAttributes().item(1).getTextContent();
-			String[] nombreCompletoSpit = nombreCompleto.split(",");
-			// --- GETING LASTNAME ---
-			String[] apellidosSplit = nombreCompletoSpit[0].split(" ");
-
-			/// --- SETTING VALUES ---
-			newProfesor.setNombre(nombreCompletoSpit[nombreCompletoSpit.length - 1].trim());
-			newProfesor.setPrimerApellido(apellidosSplit[0].trim());
-			newProfesor.setSegundoApellido(apellidosSplit[1].trim());
-
-			profesoresList.add(newProfesor);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfAula
-	 *
-	 * @param aulasNodeList
-	 * @param aulasList
-	 */
-	private void gettingValuesOfAula(NodeList aulasNodeList, List<Aula> aulasList)
-	{
-		for (int i = 0; i < aulasNodeList.getLength(); i++)
-		{
-			Aula newAula = new Aula();
-			newAula.setAbreviatura(aulasNodeList.item(i).getAttributes().item(0).getTextContent());
-			newAula.setNumIntAu(aulasNodeList.item(i).getAttributes().item(2).getTextContent());
-			newAula.setNombre(aulasNodeList.item(i).getAttributes().item(1).getTextContent());
-
-			aulasList.add(newAula);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfGrupo
-	 *
-	 * @param gruposNodeList
-	 * @param gruposList
-	 */
-	private void gettingValuesOfGrupo(NodeList gruposNodeList, List<Grupo> gruposList)
-	{
-		for (int i = 0; i < gruposNodeList.getLength(); i++)
-		{
-			Grupo newGrupo = new Grupo();
-			newGrupo.setAbreviatura(gruposNodeList.item(i).getAttributes().item(0).getTextContent());
-			newGrupo.setNumIntGr(gruposNodeList.item(i).getAttributes().item(2).getTextContent());
-			newGrupo.setNombre(gruposNodeList.item(i).getAttributes().item(1).getTextContent());
-
-			gruposList.add(newGrupo);
-		}
-	}
-
-	/**
-	 * Method gettingValuesOfAsignatura
-	 *
-	 * @param asignaturasNodeList
-	 * @param asignaturasList
-	 */
-	private void gettingValuesOfAsignatura(NodeList asignaturasNodeList, List<Asignatura> asignaturasList)
-	{
-		for (int i = 0; i < asignaturasNodeList.getLength(); i++)
-		{
-			Asignatura newAsignatura = new Asignatura();
-			newAsignatura.setAbreviatura(asignaturasNodeList.item(i).getAttributes().item(0).getTextContent());
-			newAsignatura.setNumIntAs(asignaturasNodeList.item(i).getAttributes().item(2).getTextContent());
-			newAsignatura.setNombre(asignaturasNodeList.item(i).getAttributes().item(1).getTextContent());
-
-			asignaturasList.add(newAsignatura);
-		}
-	}
-
-	/**
-	 * Method extracted
-	 *
-	 * @param gruposActividad
-	 * @param node
-	 */
-	private GruposActividad getGruposActividadAttributeTexts(GruposActividad gruposActividad, Node node)
-	{
-		if (node.getNodeName().equals("tot_gr_act"))
-		{
-			gruposActividad.setTotGrAct(node.getTextContent());
-		}
-		if (node.getNodeName().equals("grupo_1"))
-		{
-			gruposActividad.setGrupo1(node.getTextContent());
-		}
-		if (node.getNodeName().equals("grupo_2"))
-		{
-			gruposActividad.setGrupo2(node.getTextContent());
-		}
-		if (node.getNodeName().equals("grupo_3"))
-		{
-			gruposActividad.setGrupo3(node.getTextContent());
-		}
-		if (node.getNodeName().equals("grupo_4"))
-		{
-			gruposActividad.setGrupo4(node.getTextContent());
-		}
-		if (node.getNodeName().equals("grupo_5"))
-		{
-			gruposActividad.setGrupo5(node.getTextContent());
-		}
-		return gruposActividad;
-	}
-
-	/**
 	 * Method getListCourse
 	 *
 	 * @param session
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/courses", produces = "application/json")
+	@RequestMapping(value = "/get/courses", produces = "application/json")
 	public ResponseEntity<?> getListCourse(HttpSession session)
+
 	{
 		List<Course> listaCurso = new ArrayList<>();
 		Course curso;
@@ -936,43 +966,44 @@ public class TimetableRest
 		List<Aula> listaAula = new ArrayList<>();
 		try
 		{
-				// -- GETTING LIST OF AULA IN CENTER ---
-				listaAula = this.centroPdfs.getDatos().getAulas().getAula();
+			// -- Recupera un listado de aulas (dto) de la base de datos.
+			listaAula = aulaRepo.recuperaListadoAulas();
 
-				// -- FOR EAHC AULA IN listAula ---
-				for (int i = 0; i < listaAula.size(); i++)
+			// -- FOR EACH AULA IN listAula ---
+			for (int i = 0; i < listaAula.size(); i++)
+			{
+				if (listaAula.get(i).getAbreviatura().isEmpty() || (listaAula.get(i).getAbreviatura() == null))
 				{
-					if (listaAula.get(i).getAbreviatura().isEmpty() || (listaAula.get(i).getAbreviatura() == null))
-					{
-						continue;
-					}
-					String nombreAula = listaAula.get(i).getNombre();
-
-					String[] plantaAula = listaAula.get(i).getAbreviatura().split("\\.");
-
-					String plantaNumero = "";
-					String numeroAula = "";
-					// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
-					if (plantaAula.length > 1)
-					{
-						plantaNumero = plantaAula[0].trim();
-						numeroAula = plantaAula[1].trim();
-					}
-					else
-					{
-						plantaNumero = plantaAula[0].trim();
-						numeroAula = plantaAula[0].trim();
-					}
-
-					// -- IMPORTANT , CLASSROOM PLANTANUMERO AND NUMEROAULA , CHANGED TO STRING
-					// BECAUSE SOME PARAMETERS CONTAINS CHARACTERS ---
-					classroom = new Classroom(plantaNumero, numeroAula);
-					curso = new Course(nombreAula, classroom);
-					listaCurso.add(curso);
+					continue;
 				}
-			
-		}
-		catch (Exception exception)
+
+				String nombreAula = listaAula.get(i).getNombre();
+
+				String[] plantaAula = listaAula.get(i).getAbreviatura().split("\\.");
+
+				String plantaNumero = "";
+
+				String numeroAula = "";
+
+				// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
+				if (plantaAula.length > 1)
+				{
+					plantaNumero = plantaAula[0].trim();
+					numeroAula = plantaAula[1].trim();
+				} else
+				{
+					plantaNumero = plantaAula[0].trim();
+					numeroAula = plantaAula[0].trim();
+				}
+
+				// -- IMPORTANT , CLASSROOM PLANTANUMERO AND NUMEROAULA , CHANGED TO STRING
+				// BECAUSE SOME PARAMETERS CONTAINS CHARACTERS ---
+				classroom = new Classroom(plantaNumero, numeroAula);
+				curso = new Course(nombreAula, classroom);
+				listaCurso.add(curso);
+			}
+
+		} catch (Exception exception)
 		{
 			// -- CATCH ANY ERROR ---
 			String error = "Server Error";
@@ -990,160 +1021,127 @@ public class TimetableRest
 	 * @param lastname
 	 * @return
 	 */
-	@RequestMapping( value = "/teacher/get/classroom", produces = "application/json")
-	public ResponseEntity<?> getClassroomTeacher(
-			@RequestParam(required = true) String name,
-			@RequestParam(required = true) String lastname,
-			HttpSession session)
+	@RequestMapping(value = "/teacher/get/classroom", produces = "application/json")
+	public ResponseEntity<?> getClassroomTeacher(@RequestParam(required = true) String name,
+			@RequestParam(required = true) String lastname, HttpSession session)
 	{
 		try
-		{
+		{ 
+
+			// Si el nombre y apellidos no están en blanco.
 			if (!name.isEmpty() && !name.isBlank() && !lastname.isBlank() && !lastname.isEmpty())
 			{
+				// Recoge el parametro y lo separa en campos.
+				String[] apellidos = lastname.trim().split(" ");
+
+				String nombreProfesor = name;
+				String primerApellido = apellidos[0]; // Asigna el primer apellido retomando el primer campo.
+				String segundoApellido = apellidos[1]; // Asigna el segundo apellido retomando el segundo campo.
+
+				// Recupera al objeto referente al docente buscado.
+				Optional<Profesor> profesorOpt = this.profesorRepo.buscaProfesorPorNombreYApellidos(nombreProfesor,
+						primerApellido, segundoApellido);
+
+				if (profesorOpt.isEmpty())
+				{
+					// --- ERROR ---
+					String error = "Error on search : Professor not found.";
+					HorariosError horariosError = new HorariosError(400, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.status(400).body(horariosError.toMap());
+				}
+
+				// PROFESOR
+				Profesor profesor = profesorOpt.get();
+				log.info(" - - - - Profesor encontrado {}", profesor.getAbreviatura());
+
+				// HORA ACTUAL
+				String currentTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
+				log.info(" - - - - Hora recuperada {}.", currentTime);
+
+				// TRAMO RELATIVO HORA ACTUAL
+				TimeSlot profTramo = null;
+				profTramo = this.gettingTramoActual(currentTime, profTramo);
 				
-					for (Profesor prof : this.centroPdfs.getDatos().getProfesores().getProfesor())
-					{
-						String profName = prof.getNombre().trim().toLowerCase();
-						String profLastName = prof.getPrimerApellido().trim().toLowerCase() + " "
-								+ prof.getSegundoApellido().trim().toLowerCase();
-
-						log.info(prof.toString());
-						if (profName.equalsIgnoreCase(name.trim()) && profLastName.equalsIgnoreCase(lastname.trim()))
-						{
-							log.info("EXISTE " + prof);
-
-							// Getting the actual time
-							String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
-							log.info(actualTime);
-
-							TimeSlot profTramo = null;
-							profTramo = this.gettingTramoActual(this.centroPdfs, actualTime, profTramo);
-
-							// --- IF PROF TRAMO IS NOT NULL ---
-							if (profTramo != null)
-							{
-								for (HorarioProf horarioProf : this.centroPdfs.getHorarios().getHorariosProfesores()
-										.getHorarioProf())
-								{
-									if (prof.getNumIntPR().equalsIgnoreCase(horarioProf.getHorNumIntPR()))
-									{
-										log.info("ENCONTRADO HORARIO PROF-> " + horarioProf);
-
-										Actividad profActividad = null;
-										for (Actividad actividad : horarioProf.getActividad())
-										{
-											if (actividad.getTramo().trim()
-													.equalsIgnoreCase(profTramo.getNumTr().trim()))
-											{
-												log.info("ENCONTRADO ACTIVIDAD -> " + actividad);
-												profActividad = actividad;
-
-												// --- LEAVING ACTIVIDAD FOR EACH ---
-												break;
-											}
-										}
-										if (profActividad == null)
-										{
-											log.info("EL TRAMO " + profTramo
-													+ "\nNO EXISTE EN LAS ACTIVIDADES DEL PROFESOR " + prof);
-											// --- ERROR ---
-											String info = "El profesor no se encuentra en ningun aula";
-											return ResponseEntity.ok().body(info);
-										}
-
-										// --- IF PROF ACTIVIAD IS NOT NULL ---
-										if (profActividad != null)
-										{
-											// --- GETTING THE ACTUAL AULA FROM AND GENERATE CLASSROOM ---
-											Aula profAula = null;
-											for (Aula aula : this.centroPdfs.getDatos().getAulas().getAula())
-											{
-												if (aula.getNumIntAu().trim()
-														.equalsIgnoreCase(profActividad.getAula().trim()))
-												{
-													log.info("AULA ENCONTRADA PARA LA ACTIVIDAD --> " + profActividad
-															+ "\n" + aula);
-													// --- SETTING THE AULA VALUE TO PROF AULA ---
-													profAula = aula;
-
-													// --- LEAVING AULA FOR EACH ---
-													break;
-												}
-											}
-											
-											// --- ASIGNATURA ---
-											Asignatura asignatura = null;
-											for (Asignatura asig : this.centroPdfs.getDatos().getAsignaturas().getAsignatura())
-											{
-												// --- EQUAL ASIGNATURA ID --
-												if (asig.getNumIntAs().trim().equalsIgnoreCase(profActividad.getAsignatura().trim()))
-												{
-													asignatura = asig;
-												}
-											}
-
-											if (profAula != null)
-											{
-												log.info("AULA ACTUAL PROFESOR: " + prof + "\n" + profAula);
-												String nombreAula = profAula.getNombre();
-
-												String[] plantaAula = profAula.getAbreviatura().split("\\.");
-
-												String plantaNumero = "";
-												String numeroAula = "";
-
-												// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
-												if (plantaAula.length > 1)
-												{
-													plantaNumero = plantaAula[0].trim();
-													numeroAula = plantaAula[1].trim();
-												}
-												else
-												{
-													plantaNumero = plantaAula[0].trim();
-													numeroAula = plantaAula[0].trim();
-													if (plantaNumero.isEmpty() || numeroAula.isEmpty())
-													{
-														plantaNumero = nombreAula;
-														numeroAula = nombreAula;
-													}
-												}
-
-												Map<String,Object> mapa = new HashMap<String, Object>();
-												Classroom classroom = new Classroom(numeroAula, plantaNumero,profAula.getNombre());
-												mapa.put("classroom", classroom);
-												mapa.put("subject", asignatura);
-												log.info(mapa.toString());
-												return ResponseEntity.ok().body(mapa);
-											}
-										}
-
-										// --- LEAVING PROFTRAMO FOREACH ---
-										break;
-									}
-								}
-								// --- LEAVING PROF FOREACH ---
-								break;
-							}
-							else
-							{
-								// --- ERROR ---
-								LocalDateTime dateTime = LocalDateTime.now();
-								String error = "Tramo no encontrado para fecha actual: " + dateTime + " ";
-								HorariosError horariosError = new HorariosError(400, error, null);
-								log.info(error, horariosError);
-								return ResponseEntity.ok().body(horariosError);
-							}
-						}
-					}
+				// Devuelve error si buscamos un profesor trabajando fuera de dias semanales.
+				if( profTramo == null ){
+					// --- ERROR ---
+					String error = "Tramo horario excedido.";
+					HorariosError horariosError = new HorariosError(400, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.status(400).body(horariosError.toMap()); 
 				}
 				
-			
+				log.info(" - - - - Tramo recuperado {}.", profTramo.toString());
+				
+				
+				// Busca una actividad basandose en un tramo horario y en un profesor. (Un
+				// profesor solo puede estar en una actividad en un momento dado.)
+				Optional<ActividadEntity> actividadProfesor = this.actividadRepo
+						.buscaActividadEntityPorTramoYProfesor(profTramo.getNumTr(), profesor.getNumIntPR());
+
+				if (actividadProfesor.isEmpty())
+				{
+					// --- ERROR ---
+					String error = "No activity for searched professor";
+					HorariosError horariosError = new HorariosError(400, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.status(400).body(horariosError.toMap());
+				}
+
+				// Recupera el aula relacionada a la actividad del profesor.
+				Aula profAula = new Aula();
+
+				profAula.setAbreviatura(actividadProfesor.get().getAula().getAbreviatura());
+				profAula.setNombre(actividadProfesor.get().getAula().getNombre());
+				profAula.setNumIntAu(actividadProfesor.get().getAula().getNumIntAu());
+
+				log.info(" - - - - Aula recuperada: {}", profAula.getAbreviatura());
+
+				Asignatura asignatura = new Asignatura(actividadProfesor.get().getAsignatura());
+				log.info(" - - - - Asignatura recuperada: {}", asignatura.getAbreviatura());
+
+				log.info("AULA ACTUAL PROFESOR: " + profesor + "\n" + profAula);
+				String nombreAula = profAula.getNombre();
+
+				String[] plantaAula = profAula.getAbreviatura().split("\\.");
+				log.debug(" - - - - Planta Aula : {}", plantaAula.toString());
+
+				String plantaNumero = "";
+				log.debug(" - - - - Planta Numero : {}", plantaNumero);
+
+				String numeroAula = "";
+				log.debug(" - - - - Numero Aula : {}", numeroAula);
+
+				// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
+				if (plantaAula.length > 1)
+				{
+					plantaNumero = plantaAula[0].trim();
+					numeroAula = plantaAula[1].trim();
+				} else
+				{
+					plantaNumero = plantaAula[0].trim();
+					numeroAula = plantaAula[0].trim();
+					if (plantaNumero.isEmpty() || numeroAula.isEmpty())
+					{
+						plantaNumero = nombreAula;
+						numeroAula = nombreAula;
+					}
+				}
+
+				Map<String, Object> mapa = new HashMap<String, Object>();
+				Classroom classroom = new Classroom(numeroAula, plantaNumero, profAula.getNombre());
+				mapa.put("classroom", classroom);
+				mapa.put("subject", asignatura);
+				log.info(mapa.toString());
+				return ResponseEntity.ok().body(mapa);
+			}
 			// --- ERROR ---
 			String error = "Error on parameters from header";
 			HorariosError horariosError = new HorariosError(500, error, null);
 			log.info(error, horariosError);
 			return ResponseEntity.status(400).body(horariosError);
+
 		}
 		catch (Exception exception)
 		{
@@ -1162,154 +1160,102 @@ public class TimetableRest
 	 * @param lastname
 	 * @return
 	 */
-	@RequestMapping( value = "/teacher/get/classroom/tramo", produces = "application/json", consumes = "application/json")
-	public ResponseEntity<?> getClassroomTeacherSchedule(
-			@RequestParam(required = true) String name,
-			@RequestParam(required = true) String lastname, 
-			@RequestBody(required = true) TimeSlot profTime,
+	@RequestMapping(value = "/teacher/get/classroom/tramo", produces = "application/json", consumes = "application/json")
+	public ResponseEntity<?> getClassroomTeacherSchedule(@RequestParam(required = true) String name,
+			@RequestParam(required = true) String lastname, @RequestBody(required = true) TimeSlot profTime,
 			HttpSession session)
 	{
 		try
 		{
 			log.info(profTime.toString());
+
+			// Si el nombre y el apellido NO SON NULOS.
 			if (!name.isEmpty() && !name.isBlank() && !lastname.isBlank() && !lastname.isEmpty())
 			{
-					for (Profesor prof : this.centroPdfs.getDatos().getProfesores().getProfesor())
+
+				String nombre = name;
+				String apellidos[] = lastname.trim().split(" ");
+				String apellido1 = apellidos[0];
+				String apellido2 = apellidos[1];
+
+				Optional<Profesor> profesorOpt = this.profesorRepo.buscaProfesorPorNombreYApellidos(nombre, apellido1,
+						apellido2);
+
+				if (profesorOpt.isEmpty())
+				{
+					// alzar error profesor no encontrado.
+
+				}
+
+				Profesor prof = profesorOpt.get();
+				log.info("Profesor recuperado: {}", prof.getAbreviatura());
+
+				// Recupera una actividad filtrando por tramo y profesor pasados por parametro.
+				Optional<ActividadEntity> actividadTramoProfesor = this.actividadRepo
+						.buscaActividadEntityPorTramoYProfesor(profTime.getNumTr().trim(), prof.getNumIntPR());
+
+				if (actividadTramoProfesor.isEmpty())
+				{
+					// lanzar error de que no tiene cosas ccon esa hora.
+					log.info("EL TRAMO " + profTime + "\nNO EXISTE EN LAS ACTIVIDADES DEL PROFESOR " + prof);
+					// --- ERROR ---
+					String error = "EL TRAMO " + profTime + "\nNO EXISTE EN LAS ACTIVIDADES DEL PROFESOR " + prof;
+					HorariosError horariosError = new HorariosError(500, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.ok().body("El profesor en el tramo " + profTime.getStartHour() + " - "
+							+ profTime.getEndHour() + " no se encuentra en ningun aula");
+				}
+
+				AulaEntity aulaEntity = actividadTramoProfesor.get().getAula();
+				AsignaturaEntity asignaturaEntity = actividadTramoProfesor.get().getAsignatura();
+
+				Aula aulaProfe = new Aula();
+				// sete atributos aula
+				aulaProfe.setAbreviatura(aulaEntity.getAbreviatura());
+				aulaProfe.setNombre(aulaEntity.getNombre());
+				aulaProfe.setNumIntAu(aulaEntity.getNumIntAu());
+
+				Asignatura asignaturaProfe = new Asignatura();
+				// setea atributos asignatura.
+				asignaturaProfe.setAbreviatura(asignaturaEntity.getAbreviatura());
+				asignaturaProfe.setNombre(asignaturaEntity.getNombre());
+				asignaturaProfe.setNumIntAs(asignaturaEntity.getNumIntAs());
+
+				// Si aula profe es nula.
+				if (aulaProfe != null)
+				{
+					log.info("AULA ACTUAL PROFESOR: " + prof + "\n" + aulaProfe);
+					String nombreAula = aulaProfe.getNombre();
+
+					String[] plantaAula = aulaProfe.getAbreviatura().split("\\.");
+					String plantaNumero = "";
+					String numeroAula = "";
+
+					// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
+					if (plantaAula.length > 1)
 					{
-						String profName = prof.getNombre().trim().toLowerCase();
-						String profLastName = prof.getPrimerApellido().trim().toLowerCase() + " "
-								+ prof.getSegundoApellido().trim().toLowerCase();
-
-						log.info(prof.toString());
-						if (profName.equalsIgnoreCase(name.trim()) && profLastName.equalsIgnoreCase(lastname.trim()))
+						plantaNumero = plantaAula[0].trim();
+						numeroAula = plantaAula[1].trim();
+					} else
+					{
+						plantaNumero = plantaAula[0].trim();
+						numeroAula = plantaAula[0].trim();
+						if (plantaNumero.isEmpty() || numeroAula.isEmpty())
 						{
-							log.info("EXISTE " + prof);
-
-							// Getting the actual time
-							String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
-							log.info(actualTime);
-
-							// --- IF PROF TRAMO IS NOT NULL ---
-							if (profTime != null)
-							{
-								for (HorarioProf horarioProf : this.centroPdfs.getHorarios().getHorariosProfesores()
-										.getHorarioProf())
-								{
-									if (prof.getNumIntPR().equalsIgnoreCase(horarioProf.getHorNumIntPR()))
-									{
-										log.info("ENCONTRADO HORARIO PROF-> " + horarioProf);
-
-										Actividad profActividad = null;
-										for (Actividad actividad : horarioProf.getActividad())
-										{
-											if (actividad.getTramo().trim()
-													.equalsIgnoreCase(profTime.getNumTr().trim()))
-											{
-												log.info("ENCONTRADO ACTIVIDAD -> " + actividad);
-												profActividad = actividad;
-
-												// --- LEAVING ACTIVIDAD FOR EACH ---
-												break;
-											}
-										}
-										if (profActividad == null)
-										{
-											log.info("EL TRAMO " + profTime
-													+ "\nNO EXISTE EN LAS ACTIVIDADES DEL PROFESOR " + prof);
-											// --- ERROR ---
-											String error = "EL TRAMO " + profTime
-													+ "\nNO EXISTE EN LAS ACTIVIDADES DEL PROFESOR " + prof;
-											HorariosError horariosError = new HorariosError(500, error, null);
-											log.info(error, horariosError);
-											return ResponseEntity.ok().body("El profesor en el tramo "+profTime.getStartHour()+" - "+profTime.getEndHour()+" no se encuentra en ningun aula");
-										}
-
-										// --- IF PROF ACTIVIAD IS NOT NULL ---
-										if (profActividad != null)
-										{
-											// --- GETTING THE ACTUAL AULA FROM AND GENERATE CLASSROOM ---
-											Aula profAula = null;
-											for (Aula aula : this.centroPdfs.getDatos().getAulas().getAula())
-											{
-												if (aula.getNumIntAu().trim()
-														.equalsIgnoreCase(profActividad.getAula().trim()))
-												{
-													log.info("AULA ENCONTRADA PARA LA ACTIVIDAD --> " + profActividad
-															+ "\n" + aula);
-													// --- SETTING THE AULA VALUE TO PROF AULA ---
-													profAula = aula;
-
-													// --- LEAVING AULA FOR EACH ---
-													break;
-												}
-											}
-											
-											// --- ASIGNATURA ---
-											Asignatura asignatura = null;
-											for (Asignatura asig : this.centroPdfs.getDatos().getAsignaturas().getAsignatura())
-											{
-												// --- EQUAL ASIGNATURA ID --
-												if (asig.getNumIntAs().trim().equalsIgnoreCase(profActividad.getAsignatura().trim()))
-												{
-													asignatura = asig;
-												}
-											}
-
-											if (profAula != null)
-											{
-												log.info("AULA ACTUAL PROFESOR: " + prof + "\n" + profAula);
-												String nombreAula = profAula.getNombre();
-
-												String[] plantaAula = profAula.getAbreviatura().split("\\.");
-
-												String plantaNumero = "";
-												String numeroAula = "";
-
-												// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
-												if (plantaAula.length > 1)
-												{
-													plantaNumero = plantaAula[0].trim();
-													numeroAula = plantaAula[1].trim();
-												}
-												else
-												{
-													plantaNumero = plantaAula[0].trim();
-													numeroAula = plantaAula[0].trim();
-													if (plantaNumero.isEmpty() || numeroAula.isEmpty())
-													{
-														plantaNumero = nombreAula;
-														numeroAula = nombreAula;
-													}
-												}
-												Map<String,Object> mapa = new HashMap<String,Object>();
-												Classroom classroom = new Classroom(numeroAula,plantaNumero,profAula.getNombre());
-												mapa.put("classroom", classroom);
-												mapa.put("subject", asignatura);
-												log.info(mapa.toString());
-												
-												return ResponseEntity.ok().body(mapa);
-											}
-										}
-
-										// --- LEAVING PROFTRAMO FOREACH ---
-										break;
-									}
-								}
-								// --- LEAVING PROF FOREACH ---
-								break;
-							}
-							else
-							{
-								// --- ERROR ---
-								String error = "Tramo introducido null" + profTime;
-								HorariosError horariosError = new HorariosError(400, error, null);
-								log.info(error, horariosError);
-								return ResponseEntity.status(400).body(horariosError);
-							}
+							plantaNumero = nombreAula;
+							numeroAula = nombreAula;
 						}
 					}
+
+					Map<String, Object> mapa = new HashMap<String, Object>();
+					Classroom classroom = new Classroom(numeroAula, plantaNumero, aulaProfe.getNombre());
+					mapa.put("classroom", classroom);
+					mapa.put("subject", asignaturaProfe);
+					log.info(mapa.toString());
+
+					return ResponseEntity.ok().body(mapa); // respuesta del metodo.
 				}
-				
+			}
 			// --- ERROR ---
 			String error = "Error on parameters from header";
 			HorariosError horariosError = new HorariosError(500, error, null);
@@ -1332,185 +1278,198 @@ public class TimetableRest
 	 * @param courseName
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/teachersubject", produces = "application/json")
-	public ResponseEntity<?> getTeacherSubject(
-			@RequestParam(required = true) String courseName,
-			HttpSession session)
+	@RequestMapping(value = "/get/teachersubject", produces = "application/json")
+	public ResponseEntity<?> getTeacherSubject(@RequestParam(required = true) String courseName, HttpSession session)
+
 	{
 		try
 		{
 			if (!courseName.isBlank() && !courseName.isBlank())
 			{
 
-					// --- IF EXIST THE COURSE ---
-					Grupo grup = null;
-					for (Grupo grupo : this.centroPdfs.getDatos().getGrupos().getGrupo())
+				// --- IF EXIST THE COURSE ---
+				Grupo grup = null;
+
+				List<Grupo> listadoGrupos = this.grupoRepo.recuperaGruposDeParseo();
+
+				for (Grupo grupo : listadoGrupos)
+				{
+					if (grupo.getNombre().trim().equalsIgnoreCase(courseName.trim()))
 					{
-						if (grupo.getNombre().trim().equalsIgnoreCase(courseName.trim()))
-						{
-							// --- EXIST THE COURSE ---
-							grup = grupo;
-						}
+						// --- EXIST THE COURSE ---
+						grup = grupo;
 					}
-					if (grup != null)
+				}
+				if (grup != null)
+				{
+					// --- GRUPO EXIST , NOW GET THE ACUTAL TRAMO ---
+					TimeSlot acutalTramo = null;
+
+					// Getting the actual time
+					String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
+					log.info(actualTime);
+
+					acutalTramo = this.gettingTramoActual(actualTime, acutalTramo);
+
+					// --- CHECKING IF THE TRAMO ACTUAL EXISTS ---
+					if (acutalTramo != null)
 					{
-						// --- GRUPO EXIST , NOW GET THE ACUTAL TRAMO ---
-						TimeSlot acutalTramo = null;
+						// --- TRAMO ACTUAL EXISTS ---
 
-						// Getting the actual time
-						String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
-						log.info(actualTime);
+						// --- NOW GETTING THE HORARIO GRUP , WITH THE SAME ID OF THE GROUP ---
+						HorarioGrup horario = null;
 
-						acutalTramo = this.gettingTramoActual(this.centroPdfs, actualTime, acutalTramo);
+						List<HorarioGrup> listadoHorariosGrupo = new ArrayList<>();
 
-						// --- CHECKING IF THE TRAMO ACTUAL EXISTS ---
-						if (acutalTramo != null)
+						this.fillHorarioGrupoValues(listadoHorariosGrupo);
+
+						for (HorarioGrup horarioGrup : listadoHorariosGrupo)
 						{
-							// --- TRAMO ACTUAL EXISTS ---
-
-							// --- NOW GETTING THE HORARIO GRUP , WITH THE SAME ID OF THE GROUP ---
-							HorarioGrup horario = null;
-							for (HorarioGrup horarioGrup : this.centroPdfs.getHorarios().getHorariosGrupos().getHorarioGrup())
+							// --- EQUAL IDS ---
+							if (horarioGrup.getHorNumIntGr().trim().equalsIgnoreCase(grup.getNumIntGr().trim()))
 							{
-								// --- EQUAL IDS ---
-								if (horarioGrup.getHorNumIntGr().trim().equalsIgnoreCase(grup.getNumIntGr().trim()))
+								// --- THE HORARIO GROUP OF THE GROUP ---
+								horario = horarioGrup;
+							}
+						}
+
+						// --- IF THE HORARIO GRUP EXIST ---
+						if (horario != null)
+						{
+							// --- GETTING THE HORARIO GRUP ACTIVIDADES ----
+							Actividad activ = null;
+							for (Actividad actividad : horario.getActividad())
+							{
+								// --- GETTING THE ACTIVIDAD WITH THE SAME ID OF THE ACTUAL TRAMO ---
+								if (actividad.getTramo().trim().equalsIgnoreCase(acutalTramo.getNumTr().trim()))
 								{
-									// --- THE HORARIO GROUP OF THE GROUP ---
-									horario = horarioGrup;
+									activ = actividad;
 								}
 							}
 
-							// --- IF THE HORARIO GRUP EXIST ---
-							if (horario != null)
+							// --- IF EXIST THIS ACTIVIDAD ---
+							if (activ != null)
 							{
-								// --- GETTING THE HORARIO GRUP ACTIVIDADES ----
-								Actividad activ = null;
-								for (Actividad actividad : horario.getActividad())
+								// --- NOW GET THE PROFESOR AND ASIGNATURA BY PROFESOR ID AND THE ASIGNATURA ID
+								// ---
+
+								// --- PROFESOR ---
+								Profesor profesor = null;
+
+								List<Profesor> listadoProfesores = this.profesorRepo.recuperaListadoProfesores();
+
+								for (Profesor prof : listadoProfesores)
 								{
-									// --- GETTING THE ACTIVIDAD WITH THE SAME ID OF THE ACTUAL TRAMO ---
-									if (actividad.getTramo().trim().equalsIgnoreCase(acutalTramo.getNumTr().trim()))
+									// --- EQUAL PROFESSOR ID --
+									if (prof.getNumIntPR().trim().equalsIgnoreCase(activ.getProfesor().trim()))
 									{
-										activ = actividad;
+										profesor = prof;
 									}
 								}
 
-								// --- IF EXIST THIS ACTIVIDAD ---
-								if (activ != null)
+								// --- ASIGNATURA ---
+								Asignatura asignatura = null;
+
+								List<Asignatura> listadoAsignaturas = this.asignaturaRepo.recuperaListadoAsignatura();
+
+								for (Asignatura asig : listadoAsignaturas)
 								{
-									// --- NOW GET THE PROFESOR AND ASIGNATURA BY PROFESOR ID AND THE ASIGNATURA ID
-									// ---
-
-									// --- PROFESOR ---
-									Profesor profesor = null;
-									for (Profesor prof : this.centroPdfs.getDatos().getProfesores().getProfesor())
+									// --- EQUAL ASIGNATURA ID --
+									if (asig.getNumIntAs().trim().equalsIgnoreCase(activ.getAsignatura().trim()))
 									{
-										// --- EQUAL PROFESSOR ID --
-										if (prof.getNumIntPR().trim().equalsIgnoreCase(activ.getProfesor().trim()))
-										{
-											profesor = prof;
-										}
+										asignatura = asig;
 									}
+								}
 
-									// --- ASIGNATURA ---
-									Asignatura asignatura = null;
-									for (Asignatura asig : this.centroPdfs.getDatos().getAsignaturas().getAsignatura())
-									{
-										// --- EQUAL ASIGNATURA ID --
-										if (asig.getNumIntAs().trim().equalsIgnoreCase(activ.getAsignatura().trim()))
-										{
-											asignatura = asig;
-										}
-									}
+								if ((profesor != null) && (asignatura != null))
+								{
+									// --- THE FINAL PROFESSOR AND ASIGNATURA ---
+									log.info("PROFESOR: " + profesor + "\n" + "ASIGNATURA: " + asignatura);
+									TeacherMoment teacherMoment = new TeacherMoment();
 
-									if ((profesor != null) && (asignatura != null))
-									{
-										// --- THE FINAL PROFESSOR AND ASIGNATURA ---
-										log.info("PROFESOR: " + profesor + "\n" + "ASIGNATURA: " + asignatura);
-										TeacherMoment teacherMoment = new TeacherMoment();
+									// --- TELEFONO - EMAIL - AND -ROL - IS FAKE AND HARDCODED, BECAUSE THE XML DONT
+									// HAVE THIS INFO ---
+									// --setting teacher---
+									teacherMoment.setTeacher(new Teacher(profesor.getNombre().trim(),
+											profesor.getPrimerApellido().trim() + " "
+													+ profesor.getSegundoApellido().trim(),
+											profesor.getNombre().trim() + "@email.com", "000-000-000",
+											List.of(Rol.conserje)));
 
-										// --- TELEFONO - EMAIL - AND -ROL - IS FAKE AND HARDCODED, BECAUSE THE XML DONT
-										// HAVE THIS INFO ---
-										// --setting teacher---
-										teacherMoment.setTeacher(new Teacher(profesor.getNombre().trim(),
-												profesor.getPrimerApellido().trim() + " "
-														+ profesor.getSegundoApellido().trim(),
-												profesor.getNombre().trim() + "@email.com", "000-000-000",
-												List.of(Rol.conserje)));
+									// --- setting asignatura name ---
+									teacherMoment.setSubject(asignatura.getNombre().trim());
 
-										// --- setting asignatura name ---
-										teacherMoment.setSubject(asignatura.getNombre().trim());
-										
-										Classroom clase = this.util.searchClassroom(activ.getAula(),this.centroPdfs.getDatos().getAulas().getAula());
-										teacherMoment.setClassroom(clase);
-										
-										// --- RETURN THE THEACER MOMENT , WIOUTH CLASSROOM ---
-										return ResponseEntity.ok().body(teacherMoment);
+									List<Aula> listadoAulas = this.aulaRepo.recuperaListadoAulas();
 
-									}
-									else
-									{
+									Classroom clase = this.util.searchClassroom(activ.getAula(), listadoAulas);
+									teacherMoment.setClassroom(clase);
 
-										// --- ERROR ---
-										String error = "PROFESOR O ASIGNATURA NO ENCONTRADOS O NULL " + profesor + "\n"
-												+ asignatura;
-
-										log.info(error);
-
-										HorariosError horariosError = new HorariosError(400, error, null);
-										log.info(error, horariosError);
-										return ResponseEntity.status(400).body(horariosError);
-									}
+									// --- RETURN THE THEACER MOMENT , WIOUTH CLASSROOM ---
+									return ResponseEntity.ok().body(teacherMoment);
 
 								}
 								else
 								{
+
 									// --- ERROR ---
-									String error = "ERROR , ACTIVIDAD NULL O NO ENCONTRADA";
+									String error = "PROFESOR O ASIGNATURA NO ENCONTRADOS O NULL " + profesor + "\n" + asignatura;
 
 									log.info(error);
 
 									HorariosError horariosError = new HorariosError(400, error, null);
 									log.info(error, horariosError);
-									return ResponseEntity.status(400).body(horariosError);
+									return ResponseEntity.status(400).body(horariosError.toMap());
 								}
 
 							}
 							else
 							{
 								// --- ERROR ---
-								String error = "ERROR , HORARIO GRUP NULL O NO ENCONTRADO";
+								String error = "ERROR , ACTIVIDAD NULL O NO ENCONTRADA";
 
 								log.info(error);
 
 								HorariosError horariosError = new HorariosError(400, error, null);
 								log.info(error, horariosError);
-								return ResponseEntity.status(400).body(horariosError);
+								return ResponseEntity.status(400).body(horariosError.toMap());
 							}
 						}
 						else
 						{
 							// --- ERROR ---
-							String error = "ERROR , TRAMO NULL O NO EXISTE";
+							String error = "ERROR , HORARIO GRUP NULL O NO ENCONTRADO";
 
 							log.info(error);
 
 							HorariosError horariosError = new HorariosError(400, error, null);
 							log.info(error, horariosError);
-							return ResponseEntity.status(400).body(horariosError);
+							return ResponseEntity.status(400).body(horariosError.toMap());
 						}
 					}
 					else
 					{
 						// --- ERROR ---
-						String error = "ERROR GRUPO NULL O NO ENCONTRADO ";
+						String error = "ERROR , TRAMO NULL O NO EXISTE";
 
 						log.info(error);
 
 						HorariosError horariosError = new HorariosError(400, error, null);
 						log.info(error, horariosError);
-						return ResponseEntity.status(400).body(horariosError);
+						return ResponseEntity.status(400).body(horariosError.toMap());
 					}
 				}
+				else
+				{
+					// --- ERROR ---
+					String error = "ERROR GRUPO NULL O NO ENCONTRADO ";
+
+					log.info(error);
+
+					HorariosError horariosError = new HorariosError(400, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.status(400).body(horariosError.toMap());
+				}
+			}
 			else
 			{
 				// --- ERROR ---
@@ -1520,7 +1479,7 @@ public class TimetableRest
 
 				HorariosError horariosError = new HorariosError(400, error, null);
 				log.info(error, horariosError);
-				return ResponseEntity.status(400).body(horariosError);
+				return ResponseEntity.status(400).body(horariosError.toMap());
 			}
 		}
 		catch (Exception exception)
@@ -1529,7 +1488,7 @@ public class TimetableRest
 			String error = "Server Error";
 			HorariosError horariosError = new HorariosError(500, error, exception);
 			log.info(error, horariosError);
-			return ResponseEntity.status(500).body(horariosError);
+			return ResponseEntity.status(500).body(horariosError.toMap());
 		}
 	}
 
@@ -1540,90 +1499,73 @@ public class TimetableRest
 	 * @param session
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/classroomcourse", produces = "application/json")
-	public ResponseEntity<?> getClassroomCourse(
-			@RequestParam(required = true) String courseName, 
-			HttpSession session)
+	@RequestMapping(value = "/get/classroomcourse", produces = "application/json")
+	public ResponseEntity<?> getClassroomCourse(@RequestParam(required = true) String courseName, HttpSession session)
 	{
 		try
 		{
 			// --- CHECKING IF THE COURSE NAME IS NOT BLANK AND NOT EMPTY ---
 			if (!courseName.isBlank() && !courseName.isEmpty())
 			{
-					// --- IF THE GRUPO EXISTS (NOT NULL) ---
-					
-					// --- CHECK IF THE AULA EXISTS ---
-					Aula aula = null;
-					for (Aula aul : this.centroPdfs.getDatos().getAulas().getAula())
+				// Inicializa Aula a nulo.
+				Aula aula = null;
+
+				log.debug("Aula buscada: {}", courseName);
+				Optional<AulaEntity> aulaEntityOpt = aulaRepo.findByNombre(courseName);
+
+				if (aulaEntityOpt.isPresent())
+				{
+
+					aula = new Aula();
+					aula.setAbreviatura(aulaEntityOpt.get().getAbreviatura());
+					aula.setNombre(aulaEntityOpt.get().getNombre());
+					aula.setNumIntAu(aulaEntityOpt.get().getNumIntAu());
+					log.debug("Entidad Aula buscada recuperada con exito. {}", aula.getNombre());
+				}
+
+				// Si el proceso ha encontrado un aula y ya no es nula
+				if (aula != null)
+				{
+					String nombreAula = aula.getNombre();
+
+					// --- SPLIT BY '.' ---
+					String[] plantaAula = aula.getAbreviatura().split("\\.");
+
+					String plantaNumero = "";
+					String numeroAula = "";
+					// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
+					if (plantaAula.length > 1)
 					{
-						// --- REPLACE º,'SPACE', - , FOR EMPTY , FROM GRUPO NOMBRE AND GRUPO ABRV ---
-						// --- THIS IS FOR TRY TO GET THE MAX POSIBILITIES OF GET THE AULA FROM CURSO
-						// ---
-
-//						String aulaName = grupo.getNombre().trim().toLowerCase().replace("º", "").replace(" ", "")
-//								.replace("-", "");
-//						String aulaAbr = grupo.getAbreviatura().trim().toLowerCase().replace("º", "")
-//								.replace(" ", "").replace("-", "");
-
-						// --- CHECK IF COURSENAME EXISTS ON THE AULA NAME OR THE COURSE ABRV EXIST ON
-						// THE AULA NAME ---
-//						if (aul.getNombre().trim().toLowerCase().replace("-", "").contains(aulaName)
-//								|| aul.getNombre().trim().toLowerCase().replace("-", "").contains(aulaAbr))
-//						{
-//							// -- IF EXISTS , SET THE VALUE OF AUL (FOREACH) ON AULA ---
-//							aula = aul;
-//						}
-						if(aul.getNombre().equalsIgnoreCase(courseName))
-						{
-							aula = aul;
-						}
-					}
-
-					// --- IF THE AULA IS NOT NULL (EXISTS) ---
-					if (aula != null)
-					{
-						String nombreAula = aula.getNombre();
-
-						// --- SPLIT BY '.' ---
-						String[] plantaAula = aula.getAbreviatura().split("\\.");
-
-						String plantaNumero = "";
-						String numeroAula = "";
-						// -- THE VALUES WITH CHARACTERS ONLY HAVE 1 POSITION ---
-						if (plantaAula.length > 1)
-						{
-							plantaNumero = plantaAula[0].trim();
-							numeroAula = plantaAula[1].trim();
-						}
-						else
-						{
-							plantaNumero = plantaAula[0].trim();
-							numeroAula = plantaAula[0].trim();
-						}
-
-						// -- IMPORTANT , CLASSROOM PLANTANUMERO AND NUMEROAULA , CHANGED TO STRING
-						// BECAUSE SOME PARAMETERS CONTAINS CHARACTERS ---
-						Classroom classroom = new Classroom(numeroAula,plantaNumero,nombreAula);
-
-						// --- RETURN FINALLY THE CLASSROOM ---
-						return ResponseEntity.ok(classroom);
-
+						plantaNumero = plantaAula[0].trim();
+						numeroAula = plantaAula[1].trim();
 					}
 					else
 					{
-						// --- ERROR ---
-						String error = "ERROR AULA NOT FOUND OR NULL";
-
-						log.info(error);
-
-						HorariosError horariosError = new HorariosError(400, error, null);
-						log.info(error, horariosError);
-						return ResponseEntity.status(400).body(horariosError);
+						plantaNumero = plantaAula[0].trim();
+						numeroAula = plantaAula[0].trim();
 					}
 
-					
-					
+					// -- IMPORTANT , CLASSROOM PLANTANUMERO AND NUMEROAULA , CHANGED TO STRING
+					// BECAUSE SOME PARAMETERS CONTAINS CHARACTERS ---
+					Classroom classroom = new Classroom(numeroAula, plantaNumero, nombreAula);
+
+					// --- RETURN FINALLY THE CLASSROOM ---
+					return ResponseEntity.ok(classroom);
+
 				}
+				else
+				{
+					// --- ERROR ---
+					String error = "ERROR AULA NOT FOUND OR NULL";
+
+					log.info(error);
+
+					HorariosError horariosError = new HorariosError(400, error, null);
+					log.info(error, horariosError);
+					return ResponseEntity.status(400).body(horariosError);
+				}
+
+			}
 			else
 			{
 				// --- ERROR ---
@@ -1645,96 +1587,97 @@ public class TimetableRest
 			return ResponseEntity.status(500).body(horariosError);
 		}
 	}
-	
-	
-	@RequestMapping( value = "/get/tramos", produces = "application/json")
+
+	@RequestMapping(value = "/get/tramos", produces = "application/json")
 	public ResponseEntity<?> getNumTramos()
 	{
 		try
 		{
-			List<TimeSlot> tramos = this.centroPdfs.getDatos().getTramosHorarios().getTramo();
+			List<TimeSlot> tramos = this.timeslotRepo.recuperaListadoTramosHorarios();
 			return ResponseEntity.ok().body(tramos);
 		}
-		catch(Exception exception)
+		catch (Exception exception)
 		{
 			String message = "Error de servidor, no se encuentran datos de los tramos";
-			log.error(message,exception);
-			HorariosError error = new HorariosError(500,message,exception);
+			log.error(message, exception);
+			HorariosError error = new HorariosError(500, message, exception);
 			return ResponseEntity.status(500).body(error.toMap());
 		}
 	}
-	
+
 	/**
 	 * Method getListHours
 	 *
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/hours", produces = "application/json")
+	@RequestMapping(value = "/get/hours", produces = "application/json")
 	public ResponseEntity<?> getListHours(HttpSession session)
 	{
 		try
 		{
-				// --- CASTING OBJECT TO STORED CENTRO ---
-				//Centro centro = (Centro) session.getAttribute("storedCentro");
-				List<Hour> hourList = new ArrayList<>();
-				for (int i = 0; i < 7; i++)
-				{
-					// --- GETTING THE INFO OF EACH TRAMO, BUT ONLY THE FIRST 7 TRAMOS , BECAUSE THT
-					// REPRESENT "LUNES" "PRIMERA-ULTIMA-HORA" ---
-					TimeSlot tramo = this.centroPdfs.getDatos().getTramosHorarios().getTramo().get(i);
 
-					// --- GETTING THE HOURNAME BY THE ID OF THE TRAMO 1-7 (1,2,3,R,4,5,6) ---
-					String hourName = "";
-					switch (tramo.getNumTr().trim())
-					{
-					case "1":
-					{
-						hourName = "primera";
-						break;
-					}
-					case "2":
-					{
-						hourName = "segunda";
-						break;
-					}
-					case "3":
-					{
-						hourName = "tercera";
-						break;
-					}
-					case "4":
-					{
-						hourName = "recreo";
-						break;
-					}
-					case "5":
-					{
-						hourName = "cuarta";
-						break;
-					}
-					case "6":
-					{
-						hourName = "quinta";
-						break;
-					}
-					case "7":
-					{
-						hourName = "sexta";
-						break;
-					}
-					default:
-					{
-						// --- DEFAULT ---
-						hourName = "Desconocido";
-						break;
-					}
-					}
-					// --- ADD THE INFO OF THE TRAMO ON HOUR OBJECT ---
-					hourList.add(new Hour(hourName, tramo.getStartHour().trim(), tramo.getEndHour().trim()));
+			List<Hour> hourList = new ArrayList<>();
+
+			// Recupera un listado de tramos perteneciente al primer dia semanal (lunes)
+			// Esto recupera un total de 7 tramos horarios.
+			List<TimeSlotEntity> tramos = this.timeslotRepo.findByDayNumber("1");
+
+			// Por cada tramo en el listado.
+			for (TimeSlotEntity tramo : tramos)
+			{
+
+				// --- GETTING THE HOURNAME BY THE ID OF THE TRAMO 1-7 (1,2,3,R,4,5,6) ---
+				String hourName = "";
+				switch (tramo.getNumTr().trim())
+				{
+				case "1":
+				{
+					hourName = "primera";
+					break;
 				}
-				// --- RESPONSE WITH THE HOURLIST ---
-				return ResponseEntity.ok(hourList);
-			
+				case "2":
+				{
+					hourName = "segunda";
+					break;
+				}
+				case "3":
+				{
+					hourName = "tercera";
+					break;
+				}
+				case "4":
+				{
+					hourName = "recreo";
+					break;
+				}
+				case "5":
+				{
+					hourName = "cuarta";
+					break;
+				}
+				case "6":
+				{
+					hourName = "quinta";
+					break;
+				}
+				case "7":
+				{
+					hourName = "sexta";
+					break;
+				}
+				default:
+				{
+					// --- DEFAULT ---
+					hourName = "Desconocido";
+					break;
+				}
+				}
+				// --- ADD THE INFO OF THE TRAMO ON HOUR OBJECT ---
+				hourList.add(new Hour(hourName, tramo.getStartHour().trim(), tramo.getEndHour().trim()));
+			}
+			// --- RESPONSE WITH THE HOURLIST ---
+			return ResponseEntity.ok(hourList);
+
 		}
 		catch (Exception exception)
 		{
@@ -1748,32 +1691,58 @@ public class TimetableRest
 	}
 
 	/**
-	 * Metodo que registra una visita al baño en la
-	 * base de datos por parte de un alumno
+	 * Metodo que registra una visita al baño en la base de datos por parte de un
+	 * alumno
+	 * 
 	 * @param name
 	 * @param lastname
 	 * @param course
-	 * @return ok si todo ha ido bien, error si los parametros fallan o surge un error de servidor
+	 * @return ok si todo ha ido bien, error si los parametros fallan o surge un
+	 *         error de servidor
 	 */
 	@RequestMapping("/student/visita/bathroom")
-	public ResponseEntity<?> postVisit(
-			@RequestParam(required = true,name = "name") String name,
-			@RequestParam(required = true,name = "lastName") String lastname, 
-			@RequestParam(required = true,name = "course") String course
-			)
+	// TODO: COMPROBAR POR QUE NO FUNCIONA EL REGISTRO.
+	public ResponseEntity<?> postVisit(@RequestParam(required = true, name = "name") String name,
+			@RequestParam(required = true, name = "lastName") String lastname,
+			@RequestParam(required = true, name = "course") String course)
 	{
 		try
 		{
-			//Buscamos el estudiante
-			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
-			//En caso de que no haya ido al baño se anota
-			this.operations.comprobarVisita(student);
-			//Si no hay error devolvemos que todo ha ido bien
-			return ResponseEntity.ok().build();
+			// Buscamos el estudiante
+			Student student = new Student();
+			Optional<StudentsEntity> studentEntityOpt = this.iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname, course);
+			log.info("Estudiante recuperado: {}", studentEntityOpt.toString());
+
+			if (studentEntityOpt.isEmpty())
+			{
+				throw new HorariosError(400, "El estudiante no resulta registrado en bases de datos.");
+			}
+
+			StudentsEntity studentEntity = studentEntityOpt.get();
+			student = new Student( studentEntity );
+			
+			// Controlar si el estudiante está actualmente en el baño.
+			Boolean studentInBathroom = studentEntity.getInBathroom();
+
+			if (!studentInBathroom)
+			{
+				// Actualiza el estado del estudiante a "En el ebaño = true"
+				studentEntity.setInBathroom(true);
+				// Actualiza el registro en bases de datos.
+				iStudentsRepo.saveAndFlush(studentEntity);
+				
+				this.operations.comprobarVisita(student);
+				
+			}
+			
+			// En caso de que no haya ido al baño se anota
+
+			// Si no hay error devolvemos que todo ha ido bien
+			return ResponseEntity.ok().body("Salida al baño marcada con éxito.");
 		}
-		catch(HorariosError exception)
+		catch (HorariosError exception)
 		{
-			log.error("Error al registrar la ida de un estudiante",exception);
+			log.error("Error al registrar la ida de un estudiante", exception);
 			return ResponseEntity.status(404).body(exception.toMap());
 		}
 		catch (Exception exception)
@@ -1794,24 +1763,31 @@ public class TimetableRest
 	 * @return
 	 */
 	@RequestMapping("/student/regreso/bathroom")
-	public ResponseEntity<?> postReturnBathroom(
-			@RequestParam(required = true,name = "name") String name,
-			@RequestParam(required = true,name = "lastName") String lastname, 
-			@RequestParam(required = true,name = "course") String course
-			)
+	public ResponseEntity<?> postReturnBathroom(@RequestParam(required = true, name = "name") String name,
+			@RequestParam(required = true, name = "lastName") String lastname,
+			@RequestParam(required = true, name = "course") String course)
 	{
 		try
 		{
-			//Buscamos el estudiante
-			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
-			//En caso de que haya ido al baño se anota si esta, en caso de que no hay ido se manda un error
+			// Buscamos el estudiante
+			Student student = new Student();
+			Optional<StudentsEntity> studentEntity = iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname,
+					course);
+			// Bsucar estudiante en base de datos.
+
+			if (studentEntity.isEmpty())
+			{
+				throw new HorariosError(400, "El estudiante no resulta registrado en bases de datos.");
+			}
+			// En caso de que haya ido al baño se anota si esta, en caso de que no hay ido
+			// se manda un error
 			this.operations.comprobarVuelta(student);
-			//Si no hay error devolvemos que todo ha ido bien
+			// Si no hay error devolvemos que todo ha ido bien
 			return ResponseEntity.ok().build();
 		}
-		catch(HorariosError exception)
+		catch (HorariosError exception)
 		{
-			log.error("Error al registrar la vuelta de un estudiante",exception);
+			log.error("Error al registrar la vuelta de un estudiante", exception);
 			return ResponseEntity.status(404).body(exception.toMap());
 		}
 		catch (Exception exception)
@@ -1832,26 +1808,27 @@ public class TimetableRest
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping( value = "/get/veces/visitado/studentFechas", produces = "application/json")
-	public ResponseEntity<?> getNumberVisitsBathroom(
-			@RequestParam(required = true,name = "name") String name,
-			@RequestParam(required = true,name = "lastName") String lastname,
-			@RequestParam(required = true,name = "course") String course,
-			@RequestParam(required = true,name = "fechaInicio") String fechaInicio,
-			@RequestParam(required = true,name = "fechaFin") String fechaEnd, HttpSession session)
+	@RequestMapping(value = "/get/veces/visitado/studentFechas", produces = "application/json")
+	public ResponseEntity<?> getNumberVisitsBathroom(@RequestParam(required = true, name = "name") String name,
+			@RequestParam(required = true, name = "lastName") String lastname,
+			@RequestParam(required = true, name = "course") String course,
+			@RequestParam(required = true, name = "fechaInicio") String fechaInicio,
+			@RequestParam(required = true, name = "fechaFin") String fechaEnd, HttpSession session)
 	{
 		try
 		{
-			//Obtenemos el estudiante por su nombre apellido y curso
+			// Obtenemos el estudiante por su nombre apellido y curso
 			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
-			
-			List<Map<String,String>> visitasAlumno = this.operations.getVisitaAlumno(student, fechaInicio, fechaEnd);
-			
-			//Establecemos dos tipos de respuesta, una correcta si la lista contiene datos y un error en caso contrario
-			ResponseEntity<?> respuesta = !visitasAlumno.isEmpty() ? ResponseEntity.ok().body(visitasAlumno) 
-			: ResponseEntity.status(404).body("El alumno no ha ido en el periodo "+fechaInicio+" - "+fechaEnd+" al servicio");
-			
-			//Devolvemos una de las dos respuestas
+
+			List<Map<String, String>> visitasAlumno = this.operations.getVisitaAlumno(student, fechaInicio, fechaEnd);
+
+			// Establecemos dos tipos de respuesta, una correcta si la lista contiene datos
+			// y un error en caso contrario
+			ResponseEntity<?> respuesta = !visitasAlumno.isEmpty() ? ResponseEntity.ok().body(visitasAlumno)
+					: ResponseEntity.status(404).body(
+							"El alumno no ha ido en el periodo " + fechaInicio + " - " + fechaEnd + " al servicio");
+
+			// Devolvemos una de las dos respuestas
 			return respuesta;
 
 		}
@@ -1871,21 +1848,22 @@ public class TimetableRest
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping( value = "/get/students/visitas/bathroom", produces = "application/json")
+	@RequestMapping(value = "/get/students/visitas/bathroom", produces = "application/json")
 	public ResponseEntity<?> getListTimesBathroom(
-			@RequestParam(required = true,name="fechaInicio") String fechaInicio,
-			@RequestParam(required = true,name="fechaFin") String fechaEnd,
-			HttpSession session)
+			@RequestParam(required = true, name = "fechaInicio") String fechaInicio,
+			@RequestParam(required = true, name = "fechaFin") String fechaEnd, HttpSession session)
 	{
 		try
 		{
-			List<Map<String,Object>> visitas = this.operations.getVisitasAlumnos(fechaInicio, fechaEnd);
-			
-			//Establecemos dos tipos de respuesta, una correcta si la lista contiene datos y un error en caso contrario
-			ResponseEntity<?> respuesta = !visitas.isEmpty() ? ResponseEntity.ok().body(visitas) 
-			: ResponseEntity.status(404).body("No hay alumnos en el periodo "+fechaInicio+" - "+fechaEnd+" al servicio");
-			
-			//Devolvemos una de las dos respuestas
+			List<Map<String, Object>> visitas = this.operations.getVisitasAlumnos(fechaInicio, fechaEnd);
+
+			// Establecemos dos tipos de respuesta, una correcta si la lista contiene datos
+			// y un error en caso contrario
+			ResponseEntity<?> respuesta = !visitas.isEmpty() ? ResponseEntity.ok().body(visitas)
+					: ResponseEntity.status(404)
+							.body("No hay alumnos en el periodo " + fechaInicio + " - " + fechaEnd + " al servicio");
+
+			// Devolvemos una de las dos respuestas
 			return respuesta;
 		}
 		catch (Exception exception)
@@ -1898,28 +1876,27 @@ public class TimetableRest
 	}
 
 	/**
-	 * Metodo que devuelve el numero de visitas realizadas por un alumno
-	 * al servicio (solo cuenta aquellas en las que la fecha de vuelta no sea nula)
+	 * Metodo que devuelve el numero de visitas realizadas por un alumno al servicio
+	 * (solo cuenta aquellas en las que la fecha de vuelta no sea nula)
+	 * 
 	 * @param name
 	 * @param lastname
 	 * @param course
 	 * @return numero de veces que ha ido al servicio
 	 */
-	@RequestMapping( value = "/get/student/numero-veces-servicio", produces = "application/json")
-	public ResponseEntity<?> getDayHourBathroom(
-			@RequestParam(required = true,name = "name") String name,
-			@RequestParam(required = true,name = "lastname") String lastname, 
-			@RequestParam(required = true,name = "course") String course
-			)
+	@RequestMapping(value = "/get/student/numero-veces-servicio", produces = "application/json")
+	public ResponseEntity<?> getDayHourBathroom(@RequestParam(required = true, name = "name") String name,
+			@RequestParam(required = true, name = "lastname") String lastname,
+			@RequestParam(required = true, name = "course") String course)
 	{
 		try
 		{
-			//Obtenemos el estudiante por su nombre apellido y curso
+			// Obtenemos el estudiante por su nombre apellido y curso
 			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
-			
-			//Obtenemos el numero de vecew que ha ido y vuelto del servicio
+
+			// Obtenemos el numero de vecew que ha ido y vuelto del servicio
 			int numVecesBathroom = this.operations.obtenerNumeroVecesServicio(student);
-			
+
 			return ResponseEntity.ok().body(numVecesBathroom);
 		}
 		catch (Exception exception)
@@ -1931,7 +1908,6 @@ public class TimetableRest
 		}
 	}
 
-
 	/**
 	 * Method getSchedulePdf
 	 *
@@ -1940,11 +1916,9 @@ public class TimetableRest
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping( value = "/get/horario/teacher/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-	public ResponseEntity<?> getSchedulePdf(
-			@RequestParam(required = true) String name,
-			@RequestParam(required = true) String lastname
-			)
+	@RequestMapping(value = "/get/horario/teacher/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<?> getSchedulePdf(@RequestParam(required = true) String name,
+			@RequestParam(required = true) String lastname)
 	{
 		try
 		{
@@ -2112,8 +2086,7 @@ public class TimetableRest
 					log.info(error, horariosError);
 					return ResponseEntity.status(400).body(horariosError);
 				}
-			}
-			else
+			} else
 			{
 				// --- ERROR ---
 				String error = "ERROR PARAMETROS HEADER NULL OR EMPTY, BLANK";
@@ -2164,8 +2137,9 @@ public class TimetableRest
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping( value = "/get/grupo/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-	public ResponseEntity<?> getGroupSchedule(@RequestParam(required = true,name = "group") String grupo)
+	@RequestMapping(value = "/get/grupo/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<?> getGroupSchedule(@RequestParam(required = true, name = "group") String grupo)
+
 	{
 		try
 		{
@@ -2379,11 +2353,10 @@ public class TimetableRest
 	 * @param session
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/teacher/Classroom", produces = "application/json")
-	public ResponseEntity<?> getTeacherClassroom(
-			@RequestHeader(required = true) String name,
-			@RequestHeader(required = true) String lastname,
-			HttpSession session)
+	@RequestMapping(value = "/get/teacher/Classroom", produces = "application/json")
+	public ResponseEntity<?> getTeacherClassroom(@RequestHeader(required = true) String name,
+
+			@RequestHeader(required = true) String lastname, HttpSession session)
 	{
 		try
 		{
@@ -2454,7 +2427,7 @@ public class TimetableRest
 
 								TimeSlot tramoActual = null;
 
-								tramoActual = this.gettingTramoActual(centro, actualTime, tramoActual);
+								// tramoActual = this.gettingTramoActual(centro, actualTime, tramoActual);
 
 								if (tramoActual != null)
 								{
@@ -2506,8 +2479,7 @@ public class TimetableRest
 												{
 													plantaNumero = plantaAula[0].trim();
 													numeroAula = plantaAula[1].trim();
-												}
-												else
+												} else
 												{
 													plantaNumero = plantaAula[0].trim();
 													numeroAula = plantaAula[0].trim();
@@ -2526,8 +2498,7 @@ public class TimetableRest
 
 										// --- RETURN THE TEACHER MOMENT ---
 										return ResponseEntity.ok(teacherMoment);
-									}
-									else
+									} else
 									{
 										// --- ERROR ---
 										String error = "ERROR ACTIVDAD ACTUAL NO EXISTENTE OR NULL";
@@ -2539,8 +2510,7 @@ public class TimetableRest
 										return ResponseEntity.status(400).body(horariosError);
 									}
 
-								}
-								else
+								} else
 								{
 									// --- ERROR ---
 									String error = "ERROR TRAMO ACTUAL NO EXISTENTE OR NULL";
@@ -2552,8 +2522,7 @@ public class TimetableRest
 									return ResponseEntity.status(400).body(horariosError);
 								}
 
-							}
-							else
+							} else
 							{
 								// --- ERROR ---
 								String error = "ERROR HORARIO GRUP NOT FOUND OR NULL";
@@ -2565,8 +2534,7 @@ public class TimetableRest
 								return ResponseEntity.status(400).body(horariosError);
 							}
 
-						}
-						else
+						} else
 						{
 							// --- ERROR ---
 							String error = "GRUPO NOT FOUND OR NULL";
@@ -2578,8 +2546,7 @@ public class TimetableRest
 							return ResponseEntity.status(400).body(horariosError);
 						}
 
-					}
-					else
+					} else
 					{
 						// --- ERROR ---
 						String error = "ERROR STUDENT NOT FOUND OR NULL";
@@ -2591,8 +2558,7 @@ public class TimetableRest
 						return ResponseEntity.status(400).body(horariosError);
 					}
 
-				}
-				else
+				} else
 				{
 					// --- ERROR ---
 					String error = "ERROR DE PARAMETROS";
@@ -2604,8 +2570,7 @@ public class TimetableRest
 					return ResponseEntity.status(400).body(horariosError);
 				}
 
-			}
-			else
+			} else
 			{
 				// --- ERROR ---
 				String error = "ERROR storedCentro NOT FOUND OR NULL";
@@ -2616,8 +2581,7 @@ public class TimetableRest
 				log.info(error, horariosError);
 				return ResponseEntity.status(400).body(horariosError);
 			}
-		}
-		catch (Exception exception)
+		} catch (Exception exception)
 		{
 			String error = "Server Error";
 			HorariosError horariosError = new HorariosError(500, error, exception);
@@ -2635,11 +2599,13 @@ public class TimetableRest
 	 * @param tramoActual
 	 * @return
 	 */
-	private TimeSlot gettingTramoActual(Centro centro, String actualTime, TimeSlot tramoActual)
+	private TimeSlot gettingTramoActual(String actualTime, TimeSlot tramoActual)
 	{
-		for (TimeSlot tramo : centro.getDatos().getTramosHorarios().getTramo())
+		// Recupera listado de tramos de BBDD
+		List<TimeSlot> tramosLista = timeslotRepo.recuperaListadoTramosHorarios();
+
+		for (TimeSlot tramo : tramosLista)
 		{
-			int numTr = Integer.parseInt(tramo.getNumTr());
 
 			// --- GETTING THE HORA,MINUTO , INICIO AND FIN ---
 			int horaInicio = Integer.parseInt(tramo.getStartHour().split(":")[0].trim());
@@ -2707,7 +2673,7 @@ public class TimetableRest
 	 *
 	 * @return ResponseEntity , File PDF
 	 */
-	@RequestMapping( value = "/get/teachers/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	@RequestMapping(value = "/get/teachers/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<?> getTeachersSchedule()
 	{
 		try
@@ -2744,8 +2710,7 @@ public class TimetableRest
 								List<Actividad> temporalList = new ArrayList<>();
 								temporalList.add(atcv);
 								mapProfesor.put(temporalTramo.getDayNumber().trim(), temporalList);
-							}
-							else
+							} else
 							{
 								List<Actividad> temporalList = mapProfesor.get(temporalTramo.getDayNumber().trim());
 								temporalList.add(atcv);
@@ -2755,8 +2720,7 @@ public class TimetableRest
 
 						// --- ADD THE PROFESSOR WITH THE PROFESSOR MAP ---
 						mapProfesors.put(profesor, mapProfesor);
-					}
-					else
+					} else
 					{
 						log.error("ERROR profesor " + profesor + " HORARIO PROF NOT FOUND OR NULL");
 					}
@@ -2783,8 +2747,7 @@ public class TimetableRest
 
 						// --- RETURN OK (200) WITH THE HEADERS AND THE BYTESARRAY ---
 						return ResponseEntity.ok().headers(responseHeaders).body(bytesArray);
-					}
-					catch (IOException exception)
+					} catch (IOException exception)
 					{
 						// --- ERROR ---
 						String error = "ERROR GETTING THE BYTES OF PDF ";
@@ -2795,8 +2758,7 @@ public class TimetableRest
 						log.info(error, horariosError);
 						return ResponseEntity.status(500).body(horariosError);
 					}
-				}
-				catch (HorariosError exception)
+				} catch (HorariosError exception)
 				{
 					// --- ERROR ---
 					String error = "ERROR getting the info pdf ";
@@ -2807,8 +2769,7 @@ public class TimetableRest
 					log.info(error, horariosError);
 					return ResponseEntity.status(400).body(horariosError);
 				}
-			}
-			else
+			} else
 			{
 				// --- ERROR ---
 				String error = "ERROR centroPdfs IS NULL OR NOT FOUND";
@@ -2819,8 +2780,7 @@ public class TimetableRest
 				log.info(error, horariosError);
 				return ResponseEntity.status(400).body(horariosError);
 			}
-		}
-		catch (Exception exception)
+		} catch (Exception exception)
 		{
 			String error = "Server Error";
 			HorariosError horariosError = new HorariosError(500, error, exception);
@@ -2834,7 +2794,7 @@ public class TimetableRest
 	 *
 	 * @return ResponseEntity , File PDF
 	 */
-	@RequestMapping( value = "/get/grupos/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	@RequestMapping(value = "/get/grupos/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<?> getGlobalSchedule()
 	{
 		try
@@ -2870,8 +2830,7 @@ public class TimetableRest
 								List<Actividad> temporalList = new ArrayList<>();
 								temporalList.add(atcv);
 								mapGroup.put(temporalTramo.getDayNumber().trim(), temporalList);
-							}
-							else
+							} else
 							{
 								List<Actividad> temporalList = mapGroup.get(temporalTramo.getDayNumber().trim());
 								temporalList.add(atcv);
@@ -2881,8 +2840,7 @@ public class TimetableRest
 
 						// --- ADD THE PROFESSOR WITH THE PROFESSOR MAP ---
 						mapGroups.put(grupo, mapGroup);
-					}
-					else
+					} else
 					{
 						log.error("ERROR grupo " + grupo + " HORARIO grup NOT FOUND OR NULL");
 					}
@@ -2909,8 +2867,7 @@ public class TimetableRest
 
 						// --- RETURN OK (200) WITH THE HEADERS AND THE BYTESARRAY ---
 						return ResponseEntity.ok().headers(responseHeaders).body(bytesArray);
-					}
-					catch (IOException exception)
+					} catch (IOException exception)
 					{
 						// --- ERROR ---
 						String error = "ERROR GETTING THE BYTES OF PDF ";
@@ -2921,8 +2878,7 @@ public class TimetableRest
 						log.info(error, horariosError);
 						return ResponseEntity.status(500).body(horariosError);
 					}
-				}
-				catch (HorariosError exception)
+				} catch (HorariosError exception)
 				{
 					// --- ERROR ---
 					String error = "ERROR getting the info pdf ";
@@ -2933,8 +2889,7 @@ public class TimetableRest
 					log.info(error, horariosError);
 					return ResponseEntity.status(400).body(horariosError);
 				}
-			}
-			else
+			} else
 			{
 				// --- ERROR ---
 				String error = "ERROR centroPdfs IS NULL OR NOT FOUND";
@@ -2945,8 +2900,7 @@ public class TimetableRest
 				log.info(error, horariosError);
 				return ResponseEntity.status(400).body(horariosError);
 			}
-		}
-		catch (Exception exception)
+		} catch (Exception exception)
 		{
 			String error = "Server Error";
 			HorariosError horariosError = new HorariosError(500, error, exception);
@@ -2963,27 +2917,24 @@ public class TimetableRest
 	 */
 	// REQUEST MAPPING FOR GETTING SORTED STUDENT LIST BASED ON FIRST SURNAME AND
 	// COURSE
-	@RequestMapping( value = "/get/course/sort/students" , produces = "application/json")
-	public ResponseEntity<?> getListAlumnoFirstSurname(
-			@RequestParam(required = true) String course)
+	@RequestMapping(value = "/get/course/sort/students", produces = "application/json")
+	public ResponseEntity<?> getListAlumnoFirstSurname(@RequestParam(required = true) String course)
 	{
 		try
 		{
-			if(this.students.isEmpty()) 
+			if (this.students.isEmpty())
 			{
-				throw new HorariosError(409,"No hay alumnos cargados en el servidor");
+				throw new HorariosError(409, "No hay alumnos cargados en el servidor");
 			}
-			
-			Student [] sortStudents = this.studentOperation.sortStudentCourse(course, this.students);
-			
+
+			Student[] sortStudents = this.studentOperation.sortStudentCourse(course, this.students);
+
 			return ResponseEntity.ok().body(sortStudents);
-		}
-		catch(HorariosError exception)
+		} catch (HorariosError exception)
 		{
-			log.error("Error al devolver los alumnos ordenados",exception);
+			log.error("Error al devolver los alumnos ordenados", exception);
 			return ResponseEntity.status(400).body(exception.toMap());
-		}
-		catch (Exception exception)
+		} catch (Exception exception)
 		{
 			// -- CATCH ANY ERROR --
 			// RETURN A SERVER ERROR MESSAGE AS A RESPONSEENTITY WITH HTTP STATUS 500
@@ -2994,38 +2945,36 @@ public class TimetableRest
 			return ResponseEntity.status(500).body(horariosError);
 		}
 	}
-	
-	@RequestMapping( value = "/get/students-course",produces = "application/json")
+
+	@RequestMapping(value = "/get/students-course", produces = "application/json")
 	public ResponseEntity<?> getStudentsCourse()
 	{
 		try
 		{
-			
-			if(this.students.isEmpty()) 
+
+			if (this.students.isEmpty())
 			{
-				throw new HorariosError(409,"No hay alumnos cargados en el servidor");
+				throw new HorariosError(409, "No hay alumnos cargados en el servidor");
 			}
-			
-			List <String> courseStudent = new LinkedList<String>();
-			
-			for(Student student:this.students)
+
+			List<String> courseStudent = new LinkedList<String>();
+
+			for (Student student : this.students)
 			{
-				if(!courseStudent.contains(student.getCourse()))
+				if (!courseStudent.contains(student.getCourse()))
 				{
 					courseStudent.add((student.getCourse()));
 				}
 			}
-			
+
 			Collections.sort(courseStudent);
-			
+
 			return ResponseEntity.ok().body(courseStudent);
-		}
-		catch(HorariosError exception)
+		} catch (HorariosError exception)
 		{
-			log.error("Error al devolver los cursos de los alumnos",exception);
+			log.error("Error al devolver los cursos de los alumnos", exception);
 			return ResponseEntity.status(409).body(exception.toMap());
-		}
-		catch (Exception exception)
+		} catch (Exception exception)
 		{
 			// -- CATCH ANY ERROR --
 			// RETURN A SERVER ERROR MESSAGE AS A RESPONSEENTITY WITH HTTP STATUS 500
@@ -3039,17 +2988,24 @@ public class TimetableRest
 
 	// ENDPOINT FOR GETTING COEXISTENCE ACTITUDE POINTS
 
+	//TODO: - Notas David - Este endpointt recupera los puntos 
+	// de convivencia, pero no tenemos manera de subirlos a BBDD. 
+	// Debemos crear un endpoint de carga o dejarlo como estaba.
 	/**
 	 * Method getListPointsCoexistence
+
+	 * 
 	 * 
 	 * @return ResponseEntity
 	 */
-	@RequestMapping( value = "/get/points" , produces = "application/json")
+	@RequestMapping(value = "/get/points", produces = "application/json")
 	public ResponseEntity<?> getListPointsCoexistence()
+
+
 	{
 		try
 		{
-			List<ActitudePoints> listActitudePoints = this.util.loadPoints();
+			List<ActitudePoints> listActitudePoints = this.iActitudePointsRepo.findAllActitudePoints();
 
 			// --CHECK IF THE LIST OF ACTITUDE POINTS IS NOT EMPTY--
 			if (!listActitudePoints.isEmpty())
@@ -3080,20 +3036,17 @@ public class TimetableRest
 		}
 	}
 
-	
-	@RequestMapping(value="/get/coursenames",produces = "application/json")
+	@RequestMapping(value = "/get/coursenames", produces = "application/json")
 	public ResponseEntity<?> getCourseNames()
+
 	{
 		try
 		{
-			
-			List<Grupo> grupos = new LinkedList<Grupo>();
-			
-			grupos = this.centroPdfs.getDatos().getGrupos().getGrupo();
-		    
-		    return ResponseEntity.ok().body(this.util.ordenarLista(grupos));
-		}
-		catch (Exception exception)
+			// Crea una lista vacia de grupos.
+			List<Grupo> grupos = this.grupoRepo.recuperaGruposDeParseo();
+
+			return ResponseEntity.ok().body(this.util.ordenarLista(grupos));
+		} catch (Exception exception)
 		{
 			// -- CATCH ANY ERROR --
 			String error = "Server Error";
@@ -3103,244 +3056,366 @@ public class TimetableRest
 			// (INTERNAL SERVER ERROR) --
 			return ResponseEntity.status(500).body(horariosError);
 		}
-		
 	}
-	
-	@RequestMapping( value = "/send/csv-alumnos",consumes = "multipart/form-data")
-	public ResponseEntity<?> loadStudents(@RequestPart( name = "csvFile",required = true)MultipartFile csvFile)
+
+	@RequestMapping(value = "/send/csv-alumnos", consumes = "multipart/form-data")
+	public ResponseEntity<?> loadStudents(@RequestPart(name = "csvFile", required = true) MultipartFile csvFile)
 	{
 		try
 		{
-			byte [] content = csvFile.getBytes();
-			this.students = this.studentOperation.parseStudent(content);
-			return ResponseEntity.ok().body(students);
-		}
-		catch(HorariosError exception)
-		{
-			log.error("El fichero introducido no contiene los datos de los alumnos bien formados",exception);
-			return ResponseEntity.status(406).body(exception.toMap());
-		}
-		catch(Exception exception)
-		{
-			log.error("Error de servidor",exception);
-			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
-		}
-	}
-	
-	@RequestMapping( value = "send/csv-planos",consumes = "multipart/form-data")
-	public ResponseEntity<?> loadPlanos(@RequestPart( name="csvFile",required = true)MultipartFile csvFile)
-	{
-		try
-		{
-			byte [] content = csvFile.getBytes();
-			if(!csvFile.getOriginalFilename().endsWith(".csv"))
+			
+			byte[] content = csvFile.getBytes(); // Obtiene el contenido del archivo CSV en un arreglo de bytes.
+
+			// Parsea el CSV y lo convierte en una lista de estudiantes.
+			List<Student> estudiantes = this.studentOperation.parseStudent(content);
+			
+			List<StudentsEntity> estudiantesEntityList = new ArrayList<>();
+			
+			log.debug("Estudiantes recibidos para almacenamiento: {}", estudiantes.size());
+			
+			for (Student estudiante : estudiantes)
 			{
-				throw new HorariosError(406,"El fichero no es un csv");
+				log.debug("Preparando estudiante para persistencia: {}", estudiante);
+				StudentsEntity estudianteEntidad = new StudentsEntity(estudiante);
+				estudiantesEntityList.add(estudianteEntidad);
 			}
-			this.aulas = this.util.parseAulasPlano(content);
-			return ResponseEntity.ok().body(aulas);
+			// Guarda el listado definido en BBDD.
+			this.iStudentsRepo.saveAllAndFlush(estudiantesEntityList);
+
+			return ResponseEntity.ok().body(estudiantes); // Devuelve los datos de los estudiantes procesados.
 		}
-		catch(HorariosError exception)
+		catch (HorariosError exception)
 		{
-			log.error("El fichero introducido no contiene los datos de los planos bien formados",exception);
-			return ResponseEntity.status(406).body(exception.toMap());
+			log.error("El fichero introducido no contiene los datos de los alumnos bien formados", exception);
+			return ResponseEntity.status(406).body(exception.toMap()); // Si hay un error específico, responde con un
+																		// error 406.
 		}
-		catch(Exception exception)
+		catch (Exception exception)
 		{
-			log.error("Error de servidor",exception);
-			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace()); // Si ocurre un
 		}
 	}
-	
-	@RequestMapping( value = "/get/classroom-planos",produces = "application/json")
-	public ResponseEntity<?> getAllClassroom(@RequestParam(required = false)String planta)
-	{ 
+
+	@RequestMapping(value = "/send/csv-planos", consumes = "multipart/form-data")
+	public ResponseEntity<?> loadPlanos(@RequestPart(name = "csvFile", required = true) MultipartFile csvFile)
+	{
 		try
 		{
-			return ResponseEntity.ok().body(this.util.buscarPorPlanta(planta,this.aulas));	
+			byte[] content = csvFile.getBytes();
+			if (!csvFile.getOriginalFilename().endsWith(".csv"))
+			{
+				throw new HorariosError(406, "El fichero no es un csv");
+			}
+			List <AulaPlano> aulasListado = this.util.parseAulasPlano(content);
+			
+			List<AulaPlanoEntity> aulasPlanosEntity = new ArrayList<>();
+			
+			// Por cada aula parseada lo convierte en entidad y lo agrega a la lista, luego guarda la lista.
+			for ( AulaPlano aulaActual : aulasListado )
+			{
+				AulaPlanoEntity aulaPlanoEntity = new AulaPlanoEntity();
+				
+				Optional<AulaEntity> aulaEntity = aulaRepo.findById(aulaActual.getAula().getNumIntAu());
+				
+				// Si no recupera ningun aula devuelve error.
+				if ( aulaEntity.isEmpty() )
+				{
+					return ResponseEntity.status(400).body("El aula referenciada no existe: + aulaActual.getAula().toString()" );
+				}
+				
+				// Setea los atributos del aula actual.
+				aulaPlanoEntity.setAula(aulaEntity.get());
+				aulaPlanoEntity.setHeight(aulaActual.getHeight());
+				aulaPlanoEntity.setLeftSide(aulaActual.getLeft());
+				aulaPlanoEntity.setPlanta(aulaActual.getPlanta());
+				aulaPlanoEntity.setRightSide(aulaActual.getRight());
+				aulaPlanoEntity.setTop(aulaActual.getTop());
+				
+				aulasPlanosEntity.add(aulaPlanoEntity);
+			}
+			
+			// Guarad listado obtenido en BBDD.
+			this.iAulaPlanoRepo.saveAllAndFlush(aulasPlanosEntity);
+			
+			return ResponseEntity.ok().body(aulas); // Informa mediante DTO del listado parseado.
 		}
-		catch(HorariosError exception)
+		catch (HorariosError exception)
 		{
-			log.error("Error al filtrar las aulas",exception);
-			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
+			log.error("El fichero introducido no contiene los datos de los planos bien formados", exception);
+			return ResponseEntity.status(406).body(exception.toMap());
 		}
-		catch(Exception exception)
+		catch (Exception exception)
 		{
-			log.error("Error de servidor",exception);
-			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
 		}
 	}
-	
-	@RequestMapping( value = "/send/error-info",consumes = "application/json")
-	public ResponseEntity<?> sendErrorInfo(@RequestBody (required = false)InfoError objectError)
+
+	@RequestMapping(value = "/get/classroom-planos", produces = "application/json")
+	public ResponseEntity<?> getAllClassroom(@RequestParam(required = false) String planta)
 	{
-		this.infoError = objectError;
-		return ResponseEntity.ok().build();
+		try
+		{
+			List<AulaEntity> aulas = null ;
+			if (planta != null)
+			{
+				// Si se proporciona la planta, filtramos por planta.
+				aulas = this.aulaRepo.findByPlanta(planta);
+			}
+			else
+			{
+				// Si no se proporciona planta, obtenemos todas las aulas.
+				aulas = this.aulaRepo.findAll();
+			}
+			return ResponseEntity.ok().body(aulas); // devueve las aulas que encuentre
+		}
+		catch (Exception exception)
+		{
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
+		}
 	}
-	
-	@RequestMapping(value = "/get/error-info",produces = "application/json")
+
+	// TODO : lo que he arreglado es lo siguiente: 
+	// TODO : Nota para Jose -> Probando en Postman produce error. 
+	// Dice que debe de asignarse un ID para el error. 
+	// Esto probablemente porque el objeto espera un ID manual no uno auto-generado. 
+	// Como identificador de error tipo 402 403 etc.. 
+	// -> Debemos arreglar la correspondencia de atributos / datos entre DTO y Entidad
+	@RequestMapping(value = "/send/error-info", consumes = "application/json")
+	public ResponseEntity<?> sendErrorInfo(@RequestBody(required = false) InfoError objectError)
+	{
+	    try {
+	        // Validar si el objeto recibido es nulo
+	        if (objectError == null) {
+	            return ResponseEntity.badRequest().body("El cuerpo de la solicitud no puede estar vacío.");
+	        }
+
+	        // Validar si el ID está presente
+	        if (objectError.getId() == null) {
+	            return ResponseEntity.badRequest().body("El campo 'id' es obligatorio y debe asignarse manualmente.");
+	        }
+
+	        // Convertir el DTO InfoError a la entidad InfoErrorEntity
+	        InfoErrorEntity infoErrorEntity = new InfoErrorEntity();
+	        infoErrorEntity.setId(objectError.getId()); // Asignar el ID manual proporcionado
+	        infoErrorEntity.setHeaderInfo(objectError.getHeaderInfo());
+	        infoErrorEntity.setInfoError(objectError.getInfoError());
+	        infoErrorEntity.setWait(objectError.getWait());
+
+	        // Guardar en la base de datos usando el repositorio
+	        this.iInfoErrorRepo.saveAndFlush(infoErrorEntity);
+
+	        // Devuelve una respuesta exitosa (HTTP 200)
+	        return ResponseEntity.ok().build();
+	    }
+	    catch (Exception exception)
+	    {
+	        log.error("Error al almacenar la información del error", exception);
+	        return ResponseEntity.status(500).body("Error de servidor: " + exception.getMessage());
+	    }
+	}
+
+	@RequestMapping(value = "/get/error-info", produces = "application/json")
 	public ResponseEntity<?> getInfoError()
 	{
-		return ResponseEntity.ok().body(this.infoError);
+		try
+		{
+			List<InfoErrorEntity> errorInfoList = this.iInfoErrorRepo.findAll();
+
+			return ResponseEntity.ok().body(errorInfoList);
+
+		}
+		catch (Exception exception)
+		{
+			log.error("Error al obtner la informacion del error", exception);
+			return ResponseEntity.status(500).body("Error al obtner la informacion");
+		}
+
 	}
-	
-	@RequestMapping(value = "/check-data",produces = "application/json")
-	public ResponseEntity<?> checkServerData()
+
+	// TODO: Lo que he arreglado: 
+	// TODO: Revisitar este bloque de control para los errores.
+			// Se puede mejorar haciendo que devuelva un mensaje mas inteligente. 
+			// Haciendo una concatenación en la cadena que define los errores. 
+			// Actualmente si el XML no está cargado no avisa de los demas errores.
+			// Si el XML si está cargado pero el resto no solo informa de los estudiantes. 
+			// No refleja la situación precisa del servidor.
+	@RequestMapping(value = "/check-data", produces = "application/json")
+	public ResponseEntity<?> checkServerData() 
 	{
-		Map<String,String> errorMap = new HashMap<String, String>();
-		if(this.centroPdfs==null)
-		{
-			errorMap.put("error", "Error de datos en general");
-			return ResponseEntity.status(400).body(errorMap);
-		}
-		else if(this.students==null || this.students.isEmpty())
-		{
-			errorMap.put("error", "Error de datos de estudiantes");
-			return ResponseEntity.status(400).body(errorMap);
-		}
-		else if(this.aulas==null || this.students.isEmpty())
-		{
-			errorMap.put("error", "Error de datos de planos");
-			return ResponseEntity.status(400).body(errorMap);
-		}
-		else
-		{
-			return ResponseEntity.ok().body("Todo correcto");
-		}
+	    Map<String, Object> responseMap = new HashMap<>();
+
+	    Long contadorActividad = this.actividadRepo.count();
+	    Long contadorStudents = this.iStudentsRepo.count();
+	    Long contadorAulas = aulaRepo.count();
+
+	    // Construir una lista de errores
+	    List<String> errores = new ArrayList<>();
+
+	    if (contadorActividad == null || contadorActividad == 0)
+	    {
+	        errores.add("Error de datos en actividades.");
+	    }
+
+	    if (contadorStudents == null || contadorStudents == 0)
+	    {
+	        errores.add("Error de datos en estudiantes.");
+	    }
+
+	    if (contadorAulas == null || contadorAulas == 0)
+	    {
+	        errores.add("Error de datos en aulas.");
+	    }
+
+	    // Si hay errores, devolverlos concatenados
+	    if (!errores.isEmpty())
+	    {
+	        responseMap.put("status", "error");
+	        responseMap.put("errores", errores);
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseMap);
+	    }
+
+	    // Si no hay errores, indicar que todo está correcto
+	    responseMap.put("status", "ok");
+	    responseMap.put("mensaje", "Todos los datos están correctamente cargados.");
+	    return ResponseEntity.ok(responseMap);
 	}
-	
- 	@RequestMapping( value = "/get/aula-now", produces = "application/json")
-	public ResponseEntity<?> getCurrentClassroom(@RequestParam String numIntAu,
-												 @RequestParam String abreviatura,
-												 @RequestParam String nombre)
+
+	// TODO: Cambiar por llamadas a BBDD.
+	@RequestMapping(value = "/get/aula-now", produces = "application/json")
+	public ResponseEntity<?> getCurrentClassroom(@RequestParam String numIntAu, @RequestParam String abreviatura, @RequestParam String nombre)
 	{
 		try
 		{
-			Map<String,Object> infoAula = new HashMap<String,Object>();
-			Aula aula = new Aula(numIntAu,abreviatura,nombre);
-			
-			//Buscamos el aula
-			List<Aula> aulas = this.centroPdfs.getDatos().getAulas().getAula();
-			
-			if(!aulas.contains(aula))
-			{	
-				throw new HorariosError(404,"El aula seleccionada no se encuentra en los datos proporcionados");
+			Map<String, Object> infoAula = new HashMap<String, Object>();
+			// recibe por parametro
+			Aula aula = new Aula(numIntAu, abreviatura, nombre);
+
+			// Buscamos el aula
+			// recuperar aulas
+			List<Aula> aulas = this.centroPdfs.getDatos().getAulas().getAula(); 
+
+			if (!aulas.contains(aula))
+			{
+				throw new HorariosError(404, "El aula seleccionada no se encuentra en los datos proporcionados");
 			}
-			
-			//Obtenemos el profesor que se encuentra actualmente en el aula
+
+			// Obtenemos el profesor que se encuentra actualmente en el aula
 			Profesor profesor = this.util.searchTeacherAulaNow(this.centroPdfs, aula);
-			//Obtenemos la asignatura que se imparte actualmente en el aula
-			Map<String,Object> asignaturaActividad = this.util.searchSubjectAulaNow(centroPdfs, profesor);
-			//Sacamos la asignatura del mapa
+			// Obtenemos la asignatura que se imparte actualmente en el aula
+			Map<String, Object> asignaturaActividad = this.util.searchSubjectAulaNow(centroPdfs, profesor);
+			// Sacamos la asignatura del mapa
 			Asignatura asignatura = (Asignatura) asignaturaActividad.get("asignatura");
-			//Sacamos la actividad del mapa
+			// Sacamos la actividad del mapa
 			Actividad actividad = (Actividad) asignaturaActividad.get("actividad");
-			//Sacamos el grupo que se encuentra en el aula
+			// Sacamos el grupo que se encuentra en el aula
 			List<Grupo> grupos = this.util.searchGroupAulaNow(centroPdfs, actividad);
-			//Sacamos los alumnos que se encuentran en el aula
+			// Sacamos los alumnos que se encuentran en el aula
 			List<Student> alumnos = this.util.getAlumnosAulaNow(grupos, this.students);
-			
-			
-			
+
 			infoAula.put("profesor", profesor);
-			infoAula.put("asignatura",asignatura);
+			infoAula.put("asignatura", asignatura);
 			infoAula.put("grupo", grupos);
 			infoAula.put("alumnos", alumnos);
-			
+
 			return ResponseEntity.ok().body(infoAula);
 		}
-		catch(HorariosError exception)
+		catch (HorariosError exception)
 		{
-			log.error("Error al mostrar la informacion del aula",exception);
+			log.error("Error al mostrar la informacion del aula", exception);
 			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
-		}
-		catch(Exception exception)
+		} catch (Exception exception)
 		{
-			log.error("Error de servidor",exception);
-			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
 		}
 	}
- 		
- 	@RequestMapping(method = RequestMethod.POST, value = "/send/sancion", consumes = "application/json")
- 	public ResponseEntity<?> sendSancion(@RequestBody(required = true) Student student,
- 										 @RequestParam(name = "value",required = true) Integer value,
- 										 @RequestParam(name = "description",required = true) String description)
- 	{
- 		try
- 		{
- 			//Busqueda del estudiante
- 			this.util.findStudent(student, students);
- 			
- 			ActitudePoints points = new ActitudePoints(value, description);
- 			
- 			List<ActitudePoints> puntos = this.util.loadPoints();
- 			
- 			//Busqueda de puntos
- 			if(!puntos.contains(points))
- 			{
- 				throw new HorariosError(404,"Los puntos proporcionados no se encuentran en los datos generales");
- 			}
- 			
- 			//Guardamos la sancion en la base de datos
- 			this.operations.ponerSancion(student, points);
- 			
- 			return ResponseEntity.ok().build();
- 		}
- 		catch(HorariosError exception)
- 		{
- 			log.error("Los datos proporcionados no son correctos",exception);
- 			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
- 		}
- 		catch(Exception exception)
- 		{
- 			log.error("Error de servidor",exception);
- 			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
- 		}
- 	}
- 	
- 	@RequestMapping(method = RequestMethod.GET, value = "/get/parse-course", produces = "application/json")
- 	public ResponseEntity<?> localizarAlumno(@RequestParam(name = "course",required = true)String studentCourse)
- 	{
- 		try
- 		{
- 			String course = this.util.parseStudentGroup(studentCourse, this.centroPdfs.getDatos().getGrupos().getGrupo());
- 			
- 			//Se coloca un mapa ya que los cursos de los datos generales pueden contener
- 			//caracteres que el front no lee bien y con el mapa forzamos a mandarlos
- 			Map<String,String> map = new HashMap<String, String>();
- 			map.put("curso", course);
- 			return ResponseEntity.ok().body(map);
- 		}
- 		catch(HorariosError exception)
- 		{
- 			log.error("No existe una relacion entre el curso del alumno con los datos generales",exception);
- 			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
- 		}
- 		catch(Exception exception)
- 		{
- 			log.error("Error de servidor",exception);
- 			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
- 		}
- 	}
- 	
- 	@RequestMapping(method = RequestMethod.GET,value = "/get/alumnos-bathroom", produces = "application/json")
- 	public ResponseEntity<?> getAlumnosBathroom()
- 	{
- 		try
- 		{
- 			List<Student> students = this.operations.findStudentBathroom(this.students);
- 			students = students.isEmpty() ? null : students;
- 			return ResponseEntity.ok().body(students);
- 		}
- 		catch(HorariosError exception)
- 		{
- 			log.error("Error al encontrar los estudiantes en el baño",exception);
- 			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
- 		}
- 		catch(Exception exception)
- 		{
- 			log.error("Error de servidor",exception);
- 			return ResponseEntity.status(500).body("Error de servidor "+exception.getStackTrace());
- 		}
- 	}
- }
+
+	// TODO: Revisar por que devuelve error "NO AUTORIZADO" al hacer petición en Postman.
+	@RequestMapping(method = RequestMethod.POST, value = "/send/sancion", consumes = "application/json")
+	public ResponseEntity<?> sendSancion(@RequestBody(required = true) Student student,
+
+
+			@RequestParam(name = "value", required = true) Integer value,
+			@RequestParam(name = "description", required = true) String description)
+	{
+		try
+		{
+			// Busqueda del estudiante
+			this.util.findStudent(student, students);
+
+			ActitudePoints points = new ActitudePoints(value, description);
+
+			List<ActitudePoints> puntos = this.util.loadPoints();
+
+			// Busqueda de puntos
+			if (!puntos.contains(points))
+			{
+				throw new HorariosError(404, "Los puntos proporcionados no se encuentran en los datos generales");
+			}
+
+			// Guardamos la sancion en la base de datos
+			this.operations.ponerSancion(student, points);
+
+			return ResponseEntity.ok().build();
+		} catch (HorariosError exception)
+		{
+			log.error("Los datos proporcionados no son correctos", exception);
+			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
+		} catch (Exception exception)
+		{
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
+		}
+	}
+	
+	// TODO: Ver como interactuar con esto mediante postman. NO entiendo que se espera esta petición por parte del cliente. 
+	@RequestMapping(method = RequestMethod.GET, value = "/get/parse-course", produces = "application/json")
+	public ResponseEntity<?> localizarAlumno(@RequestParam(name = "course", required = true) String studentCourse)
+	{
+		try
+		{
+			// Recupera los grupos válidos desde la base de datos
+			List<GrupoEntity> grupos = this.grupoRepo.findAllValidGroups();
+
+			// Procesa el grupo del estudiante
+			String course = util.parseStudentGroup(studentCourse, grupos);
+
+			// Se coloca un mapa ya que los cursos de los datos generales pueden contener
+			// caracteres que el front no lee bien y con el mapa forzamos a mandarlos
+			Map<String, String> map = new HashMap<String, String>();
+			map.put("curso", course);
+			return ResponseEntity.ok().body(map);
+		} catch (HorariosError exception)
+		{
+			log.error("No existe una relacion entre el curso del alumno con los datos generales", exception);
+			return ResponseEntity.status(exception.getCode()).body(exception.toMap());
+		} catch (Exception exception)
+		{
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
+		}
+	}
+	
+
+	@RequestMapping(method = RequestMethod.GET, value = "/get/alumnos-bathroom", produces = "application/json")
+	public ResponseEntity<?> getAlumnosBathroom()
+	{
+		try
+		{
+			// Realizamos la consulta directamente en el repositorio
+			List<StudentsEntity> students = this.iStudentsRepo.findAllByInBathroomTrue();
+			// Esto es para que te compruebe si hay estudiantes en el baño devolviendo un
+			// null
+			students = students.isEmpty() ? null : students;
+			return ResponseEntity.ok().body(students);
+		} catch (Exception exception)
+		{
+			log.error("Error de servidor", exception);
+			return ResponseEntity.status(500).body("Error de servidor " + exception.getStackTrace());
+		}
+	}
+
+}
