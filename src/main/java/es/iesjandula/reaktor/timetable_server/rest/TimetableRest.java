@@ -1817,6 +1817,8 @@ public class TimetableRest
 	 * @param session
 	 * @return
 	 */
+	@Autowired
+	IStudentsRepository iStudentRepository;
 	@RequestMapping(value = "/get/veces/visitado/studentFechas", produces = "application/json")
 	public ResponseEntity<?> getNumberVisitsBathroom(@RequestParam(required = true, name = "name") String name,
 			@RequestParam(required = true, name = "lastName") String lastname,
@@ -1827,8 +1829,13 @@ public class TimetableRest
 		try
 		{
 			// Obtenemos el estudiante por su nombre apellido y curso
-			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
+			Optional<StudentsEntity> studentEntidad = iStudentRepository.findByNameAndLastNameAndCourse(name, lastname, course);
+			StudentsEntity studentEncontrado = studentEntidad.orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+			
+			
+			Student student = new Student(studentEncontrado);
 
+			
 			List<Map<String, String>> visitasAlumno = this.operations.getVisitaAlumno(student, fechaInicio, fechaEnd);
 
 			// Establecemos dos tipos de respuesta, una correcta si la lista contiene datos
