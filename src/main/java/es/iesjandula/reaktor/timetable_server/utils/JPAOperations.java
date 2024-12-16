@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.ActitudePoints;
 import es.iesjandula.reaktor.timetable_server.models.Student;
+import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
 import es.iesjandula.reaktor.timetable_server.models.jpa.Alumnos;
 import es.iesjandula.reaktor.timetable_server.models.jpa.Curso;
 import es.iesjandula.reaktor.timetable_server.models.jpa.CursoId;
@@ -26,7 +27,6 @@ import es.iesjandula.reaktor.timetable_server.repository.ICursosRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaALumnoCursoRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IPuntosConvivenciaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IVisitasServicioRepository;
-import lombok.NoArgsConstructor;
 
 
 @Service
@@ -57,15 +57,15 @@ public class JPAOperations
 	
 	/**
 	 * Metodo que registra y comprueba la ida al baño de un estudiante en la base de datos
-	 * @param student
+	 * @param studentsEntity
 	 * @throws HorariosError
 	 */
-	public void comprobarVisita(Student student) throws HorariosError
+	public void comprobarVisita(StudentsEntity studentsEntity) throws HorariosError
 	{
 		// Recupera datos de la visita.
-		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
-		Long idAlumno = this.cargarAlumno(student);
-		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
+		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
+		Long idAlumno = this.cargarAlumno(studentsEntity);
+		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		Date now = new Date();
 		VisitasServicioId visitaId = new VisitasServicioId(idAlumno,cursoId,now);
 		
@@ -73,7 +73,7 @@ public class JPAOperations
 		if(visitasDto.isEmpty())
 		{
 			this.visitasRepo.saveAndFlush(new VisitasServicio(visitaId, 
-					new Alumnos(idAlumno,student.getName(),student.getLastName()), new Curso(cursoId), null));
+					new Alumnos(idAlumno,studentsEntity.getName(),studentsEntity.getLastName()), new Curso(cursoId), null));
 		}
 		else
 		{
@@ -92,20 +92,20 @@ public class JPAOperations
 			//Si el bucle termina significa que el alumno no ha ido al baño y que por lo tanto 
 			//podremos registrar una visita sin duplicarla
 			this.visitasRepo.saveAndFlush(new VisitasServicio(visitaId, 
-					new Alumnos(idAlumno,student.getName(),student.getLastName()), new Curso(cursoId), null));
+					new Alumnos(idAlumno,studentsEntity.getName(),studentsEntity.getLastName()), new Curso(cursoId), null));
 		}
 	}
 	
 	/**
 	 * Metodo que registra y comprueba la vuelta del baño de un estudiante en la base de datos
-	 * @param student
+	 * @param studentsEntity
 	 * @throws HorariosError
 	 */
-	public void comprobarVuelta(Student student) throws HorariosError
+	public void comprobarVuelta(StudentsEntity studentsEntity) throws HorariosError
 	{
-		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
-		Long idAlumno = this.cargarAlumno(student);
-		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
+		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
+		Long idAlumno = this.cargarAlumno(studentsEntity);
+		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		
 		
 		List<VisitasServicio> visitasDto = this.visitasRepo.findAll();
@@ -136,7 +136,7 @@ public class JPAOperations
 			
 			if(!vuelta)
 			{
-				throw new HorariosError(404,"El alumno "+student.getName()+" "+student.getLastName()+" no ha ido al baño");
+				throw new HorariosError(404,"El alumno "+studentsEntity.getName()+" "+studentsEntity.getLastName()+" no ha ido al baño");
 			}
 			
 		}
@@ -147,7 +147,7 @@ public class JPAOperations
 	 * un periodo de fechas, los datos se devuelven en una lista de mapas de formato
 	 * String String en el que en cada item se guarda el dia y la hora en la que se fue
 	 * al baño 
-	 * @param student
+	 * @param studentsEntity
 	 * @param fechaInicio
 	 * @param fechaFin
 	 * @param visitas
@@ -158,7 +158,7 @@ public class JPAOperations
 	 *  <li>hora_vuelta - dia en el que visito el servicio</li>
 	 * </ul>
 	 */
-	public List<Map<String,String>> getVisitaAlumno(Student student,String fechaInicio,String fechaFin)
+	public List<Map<String,String>> getVisitaAlumno(StudentsEntity studentsEntity,String fechaInicio,String fechaFin)
 	{
 		List<Map<String,String>> visitaAlumno = new LinkedList<Map<String,String>>();
 		
@@ -167,9 +167,9 @@ public class JPAOperations
 		//Lista que se completara con los alumnos que visitaron el baño
 		List <VisitasServicio> visitasAlumno = new LinkedList<VisitasServicio>();
 		
-		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
-		Long idAlumno = this.cargarAlumno(student);
-		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
+		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
+		Long idAlumno = this.cargarAlumno(studentsEntity);
+		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		
 		//Guardamos las visitas del alumno seleccionado y nos saltamos aquellas que tienen
 		//la fecha de vuelta a null
@@ -297,17 +297,17 @@ public class JPAOperations
 	/**
 	 * Metodo que obtiene el numero de visitas al servicio por parte de
 	 * un estudiante
-	 * @param student
+	 * @param studentEntity
 	 * @return numero de visitas realizadas, en caso de que 
 	 * no haya ninguna se devuelve 0 por defecto
 	 */
-	public int obtenerNumeroVecesServicio(Student student)
+	public int obtenerNumeroVecesServicio(StudentsEntity studentsEntity)
 	{
 		int numeroVisitas = 0;
 		
-		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
-		Long alumnoId = this.cargarAlumno(student);
-		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
+		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
+		Long alumnoId = this.cargarAlumno(studentsEntity);
+		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		
 		List<VisitasServicio> visitas = this.visitasRepo.findAll();
 		
@@ -329,15 +329,15 @@ public class JPAOperations
 	 * @param student
 	 * @param points
 	 */
-	public void ponerSancion (Student student, ActitudePoints points)
+	public void ponerSancion(StudentsEntity studentsEntity, ActitudePoints points)
 	{
-		String cursoAcademico = student.getMatriculationYear()+"/"+(Integer.parseInt(student.getMatriculationYear())+1);
-		Long alumnoId = this.cargarAlumno(student);
-		CursoId cursoId = this.cargarCurso(student.getCourse(), cursoAcademico);
+		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
+		Long alumnoId = this.cargarAlumno(studentsEntity);
+		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		Long puntoId = this.cargarPuntos(points);
 		Date date = new Date();
 		PuntosConvivenciaAlumnoCursoId puntosConvivenciaId = new PuntosConvivenciaAlumnoCursoId(alumnoId,cursoId,puntoId,date);
-		this.sancionRepo.save(new PuntosConvivenciaAlumnoCurso(puntosConvivenciaId, new Alumnos(alumnoId,student.getName(),student.getLastName()),
+		this.sancionRepo.save(new PuntosConvivenciaAlumnoCurso(puntosConvivenciaId, new Alumnos(alumnoId,studentsEntity.getName(),studentsEntity.getLastName()),
 				new Curso(cursoId),new PuntosConvivencia(puntoId,points.getPoints(),points.getDescription()))); 
 		
 	}
@@ -345,10 +345,10 @@ public class JPAOperations
 	/**
 	 * Metodo que comrpueba e inserta un alumno en la base de datos en caso de que este no se 
 	 * encuentre en la misma
-	 * @param student
+	 * @param studentsEntity
 	 * @return el id del alumno para registrarlo en una visita
 	 */
-	private Long cargarAlumno(Student student)
+	private Long cargarAlumno(StudentsEntity studentsEntity)
 	{
 		//Obtenemos todos los alumnos de la base de datos
 		List<Alumnos> alumnos = this.alumnoRepo.findAll();
@@ -356,7 +356,7 @@ public class JPAOperations
 		//En caso de que la lista este vacia insertamos el primer alumno
 		if(alumnos.isEmpty())
 		{
-			alumnoDto = this.alumnoRepo.save( new Alumnos(student.getName(),student.getLastName()));
+			alumnoDto = this.alumnoRepo.save( new Alumnos(studentsEntity.getName(),studentsEntity.getLastName()));
 		}
 		else
 		{
@@ -367,7 +367,7 @@ public class JPAOperations
 			{
 				Alumnos alumno = alumnos.get(index);
 				//Si esta insertado abandonamos el bucle y nos quedamos con el alumno
-				if(alumno.getNombre().equals(student.getName()) && alumno.getApellidos().equals(student.getLastName()))
+				if(alumno.getNombre().equals(studentsEntity.getName()) && alumno.getApellidos().equals(studentsEntity.getLastName()))
 				{	
 					insert = false;
 					alumnoDto = alumno;
@@ -378,7 +378,7 @@ public class JPAOperations
 			//Si no existe en la base de datos lo insertamos
 			if(insert)
 			{
-				alumnoDto = this.alumnoRepo.save( new Alumnos(student.getName(),student.getLastName()));
+				alumnoDto = this.alumnoRepo.save( new Alumnos(studentsEntity.getName(),studentsEntity.getLastName()));
 			}
 		}
 		

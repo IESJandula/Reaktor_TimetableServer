@@ -654,40 +654,6 @@ public class TimeTableUtils
 		return studentGroup;
 	}
 	
-	/**
-	 * Metodo que busca un estudiante proporcionado por la web y
-	 * confirma si el estudiante existe o no mediante el lanzamiento
-	 * de un error
-	 * @param student
-	 * @param students
-	 * @throws HorariosError
-	 */
-	public void findStudent (Student student,List<Student> students) throws HorariosError
-	{
-		boolean encontrado = false;
-		int index = 0;
-		
-		//Iteramos la lista en busca del estudiante
-		while(index<students.size())
-		{
-			Student item = students.get(index);
-			//Comprobamos su nombre, apellidos y curso los cuales siempre tendran valor
-			if(student.getName().equals(item.getName()) && student.getLastName().equals(item.getLastName()) 
-					&& student.getCourse().equals(item.getCourse()))
-			{
-				encontrado = true;
-			}
-			
-			index++;
-		}
-		
-		//En caso de que no lo encuentre lanzara un error
-		if(!encontrado)
-		{
-			throw new HorariosError(404,"El estudiante proporcionado no se encuentra en los datos generales");
-		}
-	}
-	
 	public String parseStudentGroup(String group, List<GrupoEntity> grupos) throws HorariosError 
 	{
 	    // Esta variable almacenará el grupo final una vez que lo encontremos.

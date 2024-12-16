@@ -1715,7 +1715,6 @@ public class TimetableRest
 		try
 		{
 			// Buscamos el estudiante
-			Student student = new Student();
 			Optional<StudentsEntity> studentEntityOpt = this.iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname, course);
 			log.info("Estudiante recuperado: {}", studentEntityOpt.toString());
 
@@ -1725,10 +1724,9 @@ public class TimetableRest
 			}
 
 			StudentsEntity studentEntity = studentEntityOpt.get();
-			student = new Student( studentEntity );
 			
 			// Controlar si el estudiante está actualmente en el baño.
-			Boolean studentInBathroom = studentEntity.getInBathroom();
+			Boolean studentInBathroom = studentEntity.getInBathroom() != null && studentEntity.getInBathroom();
 
 			if (!studentInBathroom)
 			{
@@ -1737,7 +1735,7 @@ public class TimetableRest
 				// Actualiza el registro en bases de datos.
 				iStudentsRepo.saveAndFlush(studentEntity);
 				
-				this.operations.comprobarVisita(student);
+				this.operations.comprobarVisita(studentEntity);
 				
 			}
 			
@@ -1776,18 +1774,16 @@ public class TimetableRest
 		try
 		{
 			// Buscamos el estudiante
-			Student student = new Student();
-			Optional<StudentsEntity> studentEntity = iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname,
-					course);
+			Optional<StudentsEntity> optionalStudentEntity = iStudentsRepo.findByNameAndLastNameAndCourse(name, lastname, course) ;
 			// Bsucar estudiante en base de datos.
 
-			if (studentEntity.isEmpty())
+			if (optionalStudentEntity.isEmpty())
 			{
 				throw new HorariosError(400, "El estudiante no resulta registrado en bases de datos.");
 			}
 			// En caso de que haya ido al baño se anota si esta, en caso de que no hay ido
 			// se manda un error
-			this.operations.comprobarVuelta(student);
+			this.operations.comprobarVuelta(optionalStudentEntity.get());
 			// Si no hay error devolvemos que todo ha ido bien
 			return ResponseEntity.ok().build();
 		}
@@ -1827,13 +1823,9 @@ public class TimetableRest
 		{
 			// Obtenemos el estudiante por su nombre apellido y curso
 			Optional<StudentsEntity> studentEntidad = iStudentRepository.findByNameAndLastNameAndCourse(name, lastname, course);
-			StudentsEntity studentEncontrado = studentEntidad.orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+			studentEntidad.orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
 			
-			
-			Student student = new Student(studentEncontrado);
-
-			
-			List<Map<String, String>> visitasAlumno = this.operations.getVisitaAlumno(student, fechaInicio, fechaEnd);
+			List<Map<String, String>> visitasAlumno = this.operations.getVisitaAlumno(studentEntidad.get(), fechaInicio, fechaEnd);
 
 			// Establecemos dos tipos de respuesta, una correcta si la lista contiene datos
 			// y un error en caso contrario
@@ -1905,10 +1897,10 @@ public class TimetableRest
 		try
 		{
 			// Obtenemos el estudiante por su nombre apellido y curso
-			Student student = this.studentOperation.findStudent(name, lastname, course, this.students);
+			Optional<StudentsEntity> studentsEntity = this.iStudentsRepository.findByNameAndLastNameAndCourse(name, lastname, course);
 
 			// Obtenemos el numero de vecew que ha ido y vuelto del servicio
-			int numVecesBathroom = this.operations.obtenerNumeroVecesServicio(student);
+			int numVecesBathroom = this.operations.obtenerNumeroVecesServicio(studentsEntity.get());
 
 			return ResponseEntity.ok().body(numVecesBathroom);
 		}
@@ -3299,8 +3291,9 @@ public class TimetableRest
 	{
 		try
 		{
-			// Busqueda del estudiante
-			this.util.findStudent(student, students);
+			Optional<StudentsEntity> studentsEntityOpt = this.iStudentRepository.findByNameAndLastNameAndCourse(student.getName(), student.getLastName(), student.getCourse()) ;
+			
+			// TODO si no existe, devolver error
 
 			ActitudePoints points = new ActitudePoints(value, description);
 
@@ -3313,7 +3306,7 @@ public class TimetableRest
 			}
 
 			// Guardamos la sancion en la base de datos
-			this.operations.ponerSancion(student, points);
+			this.operations.ponerSancion(studentsEntityOpt.get(), points);
 
 			return ResponseEntity.ok().build();
 		} catch (HorariosError exception)
