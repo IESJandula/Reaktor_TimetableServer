@@ -192,7 +192,7 @@ public class TimetableRest
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/send/xml", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> sendXmlToObjects(@RequestPart MultipartFile xmlFile, HttpSession session)
+	public ResponseEntity<?> sendXmlToObjects(@RequestPart MultipartFile xmlFile)
 	{
 		try
 		{
@@ -902,7 +902,7 @@ public class TimetableRest
 	 * @return
 	 */
 	@RequestMapping(value = "/get/teachers", produces = "application/json")
-	public ResponseEntity<?> getProfesores(HttpSession session)
+	public ResponseEntity<?> getProfesores()
 
 	{
 		try
@@ -957,7 +957,7 @@ public class TimetableRest
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/get/courses", produces = "application/json")
-	public ResponseEntity<?> getListCourse(HttpSession session)
+	public ResponseEntity<?> getListCourse()
 
 	{
 		List<Course> listaCurso = new ArrayList<>();
@@ -1023,7 +1023,7 @@ public class TimetableRest
 	 */
 	@RequestMapping(value = "/teacher/get/classroom", produces = "application/json")
 	public ResponseEntity<?> getClassroomTeacher(@RequestParam(required = true) String name,
-			@RequestParam(required = true) String lastname, HttpSession session)
+			@RequestParam(required = true) String lastname)
 	{
 		try
 		{ 
@@ -1162,8 +1162,7 @@ public class TimetableRest
 	 */
 	@RequestMapping(value = "/teacher/get/classroom/tramo", produces = "application/json", consumes = "application/json")
 	public ResponseEntity<?> getClassroomTeacherSchedule(@RequestParam(required = true) String name,
-			@RequestParam(required = true) String lastname, @RequestBody(required = true) TimeSlot profTime,
-			HttpSession session)
+			@RequestParam(required = true) String lastname, @RequestBody(required = true) TimeSlot profTime)
 	{
 		try
 		{
@@ -1279,7 +1278,7 @@ public class TimetableRest
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/get/teachersubject", produces = "application/json")
-	public ResponseEntity<?> getTeacherSubject(@RequestParam(required = true) String courseName, HttpSession session)
+	public ResponseEntity<?> getTeacherSubject(@RequestParam(required = true) String courseName)
 
 	{
 		try
@@ -1500,7 +1499,7 @@ public class TimetableRest
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/get/classroomcourse", produces = "application/json")
-	public ResponseEntity<?> getClassroomCourse(@RequestParam(required = true) String courseName, HttpSession session)
+	public ResponseEntity<?> getClassroomCourse(@RequestParam(required = true) String courseName)
 	{
 		try
 		{
@@ -1611,7 +1610,7 @@ public class TimetableRest
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/get/hours", produces = "application/json")
-	public ResponseEntity<?> getListHours(HttpSession session)
+	public ResponseEntity<?> getListHours()
 	{
 		try
 		{
@@ -1813,7 +1812,7 @@ public class TimetableRest
 			@RequestParam(required = true, name = "lastName") String lastname,
 			@RequestParam(required = true, name = "course") String course,
 			@RequestParam(required = true, name = "fechaInicio") String fechaInicio,
-			@RequestParam(required = true, name = "fechaFin") String fechaEnd, HttpSession session)
+			@RequestParam(required = true, name = "fechaFin") String fechaEnd)
 	{
 		try
 		{
@@ -1851,7 +1850,7 @@ public class TimetableRest
 	@RequestMapping(value = "/get/students/visitas/bathroom", produces = "application/json")
 	public ResponseEntity<?> getListTimesBathroom(
 			@RequestParam(required = true, name = "fechaInicio") String fechaInicio,
-			@RequestParam(required = true, name = "fechaFin") String fechaEnd, HttpSession session)
+			@RequestParam(required = true, name = "fechaFin") String fechaEnd)
 	{
 		try
 		{
@@ -2350,13 +2349,12 @@ public class TimetableRest
 	 *
 	 * @param name
 	 * @param lastname
-	 * @param session
 	 * @return ResponseEntity
 	 */
 	@RequestMapping(value = "/get/teacher/Classroom", produces = "application/json")
 	public ResponseEntity<?> getTeacherClassroom(@RequestHeader(required = true) String name,
-
-			@RequestHeader(required = true) String lastname, HttpSession session)
+												 @RequestHeader(required = true) String lastname,
+												 HttpSession session)
 	{
 		try
 		{
