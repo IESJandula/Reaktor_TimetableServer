@@ -13,7 +13,6 @@ import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.Student;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 @Service
 public class StudentOperation 
 {

@@ -108,7 +108,6 @@ public class TimetableRest
 	@Autowired
 	ApplicationPdf applicationPdf;
 
-
 	/** Clase que se encarga de gestionar las operaciones con los estudiantes */
 	private StudentOperation studentOperation;
 
@@ -122,8 +121,6 @@ public class TimetableRest
 	/** Lista de estudiantes cargados por csv */
 	private List<Student> students;
 	
-	private List<StudentsEntity> studentsEntity;
-
 	/** Lista de los planos de las aulas */
 	private List<AulaPlanoEntity> aulas;
 
@@ -2893,14 +2890,13 @@ public class TimetableRest
 	{
 		try
 		{
-			if (this.students.isEmpty())
+			if (this.iStudentRepository.count() == 0)
 			{
 				throw new HorariosError(409, "No hay alumnos cargados en el servidor");
 			}
 
-			Student[] sortStudents = this.studentOperation.sortStudentCourse(course, this.students);
-
-			return ResponseEntity.ok().body(sortStudents);
+			return ResponseEntity.ok().body(this.iStudentRepository.findByCourseOrderByLastNameAsc(course));
+			
 		} catch (HorariosError exception)
 		{
 			log.error("Error al devolver los alumnos ordenados", exception);
@@ -2922,25 +2918,14 @@ public class TimetableRest
 	{
 		try
 		{
-			studentsEntity = this.iStudentsRepository.findAll();
-			if (this.studentsEntity.isEmpty())
+			List<String> listaDeCursos = this.iStudentsRepository.findDistinctCourses();
+			if (listaDeCursos.isEmpty())
 			{
-				throw new HorariosError(409, "No hay alumnos cargados en el servidor");
+				throw new HorariosError(409, "No hay cursos cargados en el servidor");
 			}
 
-			List<String> courseStudent = new LinkedList<String>();
-
-			for (Student student : this.students)
-			{
-				if (!courseStudent.contains(student.getCourse()))
-				{
-					courseStudent.add((student.getCourse()));
-				}
-			}
-
-			Collections.sort(courseStudent);
-
-			return ResponseEntity.ok().body(courseStudent);
+			return ResponseEntity.ok().body(listaDeCursos);
+			
 		} catch (HorariosError exception)
 		{
 			log.error("Error al devolver los cursos de los alumnos", exception);

@@ -25,4 +25,9 @@ public interface IStudentsRepository extends JpaRepository<StudentsEntity, Long>
     public List<Student> recuperaListadoEstudiantes();
  
     List<StudentsEntity> findByCourse(String course);
+
+    @Query( "SELECT DISTINCT(s.course) FROM StudentsEntity s ORDER BY s.course" )
+	public List<String> findDistinctCourses();
+
+	public List<StudentsEntity> findByCourseOrderByLastNameAsc(String course);
 }

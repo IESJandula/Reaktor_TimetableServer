@@ -30,46 +30,30 @@ import lombok.NoArgsConstructor;
 
 
 @Service
-@NoArgsConstructor
 public class JPAOperations 
 {
 	@Autowired
 	private TimeOperations timeOperations ;
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad Alumnos */
+	@Autowired
 	private IAlumnoRepository alumnoRepo;
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad Curso */
+	@Autowired
 	private ICursosRepository cursoRepo;
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad Puntos convivencia */
+	@Autowired
 	private IPuntosConvivenciaRepository puntosRepo;
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad PuntosConvivenciaAlumnosCurso */
+	@Autowired
 	private IPuntosConvivenciaALumnoCursoRepository sancionRepo;
 	
 	/**Repositorio que contiene todas las operaciones CRUD de la entidad VisitasServicio */
+	@Autowired
 	private IVisitasServicioRepository visitasRepo;
-	
-	/**
-	 * Constructor que instancia la clase con los repositorios inicializados en
-	 * la clase rest
-	 * @param alumnoRepo
-	 * @param cursoRepo
-	 * @param puntosRepo
-	 * @param sancionRepo
-	 * @param visitasRepo
-	 */
-	public JPAOperations(IAlumnoRepository alumnoRepo, ICursosRepository cursoRepo,
-			IPuntosConvivenciaRepository puntosRepo, IPuntosConvivenciaALumnoCursoRepository sancionRepo,
-			IVisitasServicioRepository visitasRepo) 
-	{
-		this.alumnoRepo = alumnoRepo;
-		this.cursoRepo = cursoRepo;
-		this.puntosRepo = puntosRepo;
-		this.sancionRepo = sancionRepo;
-		this.visitasRepo = visitasRepo;
-	}
 	
 	/**
 	 * Metodo que registra y comprueba la ida al baño de un estudiante en la base de datos
