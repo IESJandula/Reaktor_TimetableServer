@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.jpa;
 
+import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
@@ -23,7 +24,7 @@ public class PuntosConvivenciaAlumnoCurso
 	/**Id del alumno que es sancionado/recompensado */
 	@ManyToOne
 	@MapsId("alumnoId")
-	private Alumnos alumnoId;
+	private StudentsEntity alumnoId;
 	
 	/**Nombre del curso que pertence el alumno*/
 	@ManyToOne

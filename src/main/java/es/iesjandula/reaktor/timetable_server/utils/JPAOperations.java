@@ -332,12 +332,12 @@ public class JPAOperations
 	public void ponerSancion(StudentsEntity studentsEntity, ActitudePoints points)
 	{
 		String cursoAcademico = studentsEntity.getMatriculationYear()+"/"+(Integer.parseInt(studentsEntity.getMatriculationYear())+1);
-		Long alumnoId = this.cargarAlumno(studentsEntity);
+		Long alumnoId = studentsEntity.getIdStudents();
 		CursoId cursoId = this.cargarCurso(studentsEntity.getCourse(), cursoAcademico);
 		Long puntoId = this.cargarPuntos(points);
 		Date date = new Date();
 		PuntosConvivenciaAlumnoCursoId puntosConvivenciaId = new PuntosConvivenciaAlumnoCursoId(alumnoId,cursoId,puntoId,date);
-		this.sancionRepo.save(new PuntosConvivenciaAlumnoCurso(puntosConvivenciaId, new Alumnos(alumnoId,studentsEntity.getName(),studentsEntity.getLastName()),
+		this.sancionRepo.save(new PuntosConvivenciaAlumnoCurso(puntosConvivenciaId, studentsEntity,
 				new Curso(cursoId),new PuntosConvivencia(puntoId,points.getPoints(),points.getDescription()))); 
 		
 	}
