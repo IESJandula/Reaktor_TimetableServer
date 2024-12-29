@@ -14,17 +14,17 @@ public class Classroom
 	/** Attribute number*/
 	private String number;
 	
-	/** Attribute floor*/
-	private String floor;
-	
 	/** Attribute name classroom */
 	private String name;
+	
+	/** Attribute floor*/
+	private String floor;
 
-	public Classroom(String number, String floor, String name) 
+	public Classroom(String number, String name, String floor) 
 	{
 		this.number = number;
-		this.floor = floor;
 		this.name = name;
+		this.floor = floor;
 	}
 
 	public Classroom(String number, String floor) 

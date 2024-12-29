@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import es.iesjandula.reaktor.timetable_server.models.TeacherMoment;
 import es.iesjandula.reaktor.timetable_server.models.entities.ActividadEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Actividad;
 
@@ -33,5 +34,33 @@ public interface IActividadRepository extends JpaRepository<ActividadEntity, Str
     List<Actividad> findByAsignatura_NumIntAs(String numIntAs);
 	
 	
-	
+    @Query("""
+    	    SELECT new es.iesjandula.reaktor.timetable_server.models.TeacherMoment(
+    	        new es.iesjandula.reaktor.timetable_server.models.Teacher(
+    	            p.nombre,
+    	            p.primerApellido
+    	        ),
+    	        asig.nombre,
+    	        new es.iesjandula.reaktor.timetable_server.models.Classroom(
+    	            a.abreviatura,
+    	            a.nombre,
+    	            a.planta
+    	        )
+    	    )
+    	    FROM ActividadEntity ac
+    	         JOIN ac.profesor p
+    	         JOIN ac.asignatura asig
+    	         JOIN ac.aula a
+    	         JOIN ac.tramo t
+    	         JOIN ac.grupo g
+    	    WHERE g.nombre LIKE :groupName
+    	      AND t.dayNumber = :dayNumber
+    	      AND t.startHour LIKE :startHour
+    	      AND t.endHour LIKE :endHour
+    	    """)
+    	List<TeacherMoment> findTeacherMomentsByParameters(@Param("groupName") String groupName,
+    													   @Param("dayNumber") String dayNumber,
+    													   @Param("startHour") String startHour,
+    													   @Param("endHour") String endHour);
+
 }

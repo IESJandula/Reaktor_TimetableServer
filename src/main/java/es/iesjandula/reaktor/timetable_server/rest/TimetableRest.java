@@ -1264,194 +1264,8 @@ public class TimetableRest
 	{
 		try
 		{
-			if (!courseName.isBlank() && !courseName.isBlank())
+			if (courseName.isBlank())
 			{
-
-				// --- IF EXIST THE COURSE ---
-				Grupo grup = null;
-
-				List<Grupo> listadoGrupos = this.grupoRepo.recuperaGruposDeParseo();
-
-				for (Grupo grupo : listadoGrupos)
-				{
-					if (grupo.getNombre().trim().equalsIgnoreCase(courseName.trim()))
-					{
-						// --- EXIST THE COURSE ---
-						grup = grupo;
-					}
-				}
-				if (grup != null)
-				{
-					// --- GRUPO EXIST , NOW GET THE ACUTAL TRAMO ---
-
-					// Getting the actual time
-					String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
-					log.info(actualTime);
-
-					TimeSlot acutalTramo = this.gettingTramoActual(actualTime);
-
-					// --- CHECKING IF THE TRAMO ACTUAL EXISTS ---
-					if (acutalTramo != null)
-					{
-						// --- TRAMO ACTUAL EXISTS ---
-
-						// --- NOW GETTING THE HORARIO GRUP , WITH THE SAME ID OF THE GROUP ---
-						HorarioGrup horario = null;
-
-						List<HorarioGrup> listadoHorariosGrupo = new ArrayList<>();
-
-						this.fillHorarioGrupoValues(listadoHorariosGrupo);
-
-						for (HorarioGrup horarioGrup : listadoHorariosGrupo)
-						{
-							// --- EQUAL IDS ---
-							if (horarioGrup.getHorNumIntGr().trim().equalsIgnoreCase(grup.getNumIntGr().trim()))
-							{
-								// --- THE HORARIO GROUP OF THE GROUP ---
-								horario = horarioGrup;
-							}
-						}
-
-						// --- IF THE HORARIO GRUP EXIST ---
-						if (horario != null)
-						{
-							// --- GETTING THE HORARIO GRUP ACTIVIDADES ----
-							Actividad activ = null;
-							for (Actividad actividad : horario.getActividad())
-							{
-								// --- GETTING THE ACTIVIDAD WITH THE SAME ID OF THE ACTUAL TRAMO ---
-								if (actividad.getTramo().trim().equalsIgnoreCase(acutalTramo.getNumTr().trim()))
-								{
-									activ = actividad;
-								}
-							}
-
-							// --- IF EXIST THIS ACTIVIDAD ---
-							if (activ != null)
-							{
-								// --- NOW GET THE PROFESOR AND ASIGNATURA BY PROFESOR ID AND THE ASIGNATURA ID
-								// ---
-
-								// --- PROFESOR ---
-								Profesor profesor = null;
-
-								List<Profesor> listadoProfesores = this.profesorRepo.recuperaListadoProfesores();
-
-								for (Profesor prof : listadoProfesores)
-								{
-									// --- EQUAL PROFESSOR ID --
-									if (prof.getNumIntPR().trim().equalsIgnoreCase(activ.getProfesor().trim()))
-									{
-										profesor = prof;
-									}
-								}
-
-								// --- ASIGNATURA ---
-								Asignatura asignatura = null;
-
-								List<Asignatura> listadoAsignaturas = this.asignaturaRepo.recuperaListadoAsignatura();
-
-								for (Asignatura asig : listadoAsignaturas)
-								{
-									// --- EQUAL ASIGNATURA ID --
-									if (asig.getNumIntAs().trim().equalsIgnoreCase(activ.getAsignatura().trim()))
-									{
-										asignatura = asig;
-									}
-								}
-
-								if ((profesor != null) && (asignatura != null))
-								{
-									// --- THE FINAL PROFESSOR AND ASIGNATURA ---
-									log.info("PROFESOR: " + profesor + "\n" + "ASIGNATURA: " + asignatura);
-									TeacherMoment teacherMoment = new TeacherMoment();
-
-									// --- TELEFONO - EMAIL - AND -ROL - IS FAKE AND HARDCODED, BECAUSE THE XML DONT
-									// HAVE THIS INFO ---
-									// --setting teacher---
-									teacherMoment.setTeacher(new Teacher(profesor.getNombre().trim(),
-											profesor.getPrimerApellido().trim() + " "
-													+ profesor.getSegundoApellido().trim(),
-											profesor.getNombre().trim() + "@email.com", "000-000-000",
-											List.of(Rol.conserje)));
-
-									// --- setting asignatura name ---
-									teacherMoment.setSubject(asignatura.getNombre().trim());
-
-									List<Aula> listadoAulas = this.aulaRepo.recuperaListadoAulas();
-
-									Classroom clase = this.util.searchClassroom(activ.getAula(), listadoAulas);
-									teacherMoment.setClassroom(clase);
-
-									// --- RETURN THE THEACER MOMENT , WIOUTH CLASSROOM ---
-									return ResponseEntity.ok().body(teacherMoment);
-
-								}
-								else
-								{
-
-									// --- ERROR ---
-									String error = "PROFESOR O ASIGNATURA NO ENCONTRADOS O NULL " + profesor + "\n" + asignatura;
-
-									log.info(error);
-
-									HorariosError horariosError = new HorariosError(400, error, null);
-									log.info(error, horariosError);
-									return ResponseEntity.status(400).body(horariosError.toMap());
-								}
-
-							}
-							else
-							{
-								// --- ERROR ---
-								String error = "ERROR , ACTIVIDAD NULL O NO ENCONTRADA";
-
-								log.info(error);
-
-								HorariosError horariosError = new HorariosError(400, error, null);
-								log.info(error, horariosError);
-								return ResponseEntity.status(400).body(horariosError.toMap());
-							}
-						}
-						else
-						{
-							// --- ERROR ---
-							String error = "ERROR , HORARIO GRUP NULL O NO ENCONTRADO";
-
-							log.info(error);
-
-							HorariosError horariosError = new HorariosError(400, error, null);
-							log.info(error, horariosError);
-							return ResponseEntity.status(400).body(horariosError.toMap());
-						}
-					}
-					else
-					{
-						// --- ERROR ---
-						String error = "ERROR , TRAMO NULL O NO EXISTE";
-
-						log.info(error);
-
-						HorariosError horariosError = new HorariosError(400, error, null);
-						log.info(error, horariosError);
-						return ResponseEntity.status(400).body(horariosError.toMap());
-					}
-				}
-				else
-				{
-					// --- ERROR ---
-					String error = "ERROR GRUPO NULL O NO ENCONTRADO ";
-
-					log.info(error);
-
-					HorariosError horariosError = new HorariosError(400, error, null);
-					log.info(error, horariosError);
-					return ResponseEntity.status(400).body(horariosError.toMap());
-				}
-			}
-			else
-			{
-				// --- ERROR ---
 				String error = "ERROR , CURSO EN BLANCO O NO PERMITIDO";
 
 				log.info(error);
@@ -1460,6 +1274,16 @@ public class TimetableRest
 				log.info(error, horariosError);
 				return ResponseEntity.status(400).body(horariosError.toMap());
 			}
+			
+			// Getting the actual time
+			String actualTime = LocalDateTime.now().getHour() + ":" + LocalDateTime.now().getMinute();
+			log.info(actualTime);
+
+			TimeSlot tramoActual = this.gettingTramoActual(actualTime);
+			
+			List<TeacherMoment> teacherMoments = this.actividadRepo.findTeacherMomentsByParameters(courseName, tramoActual.getDayNumber(), tramoActual.getStartHour(), tramoActual.getEndHour()) ;
+			
+			return ResponseEntity.ok(teacherMoments) ;
 		}
 		catch (Exception exception)
 		{
