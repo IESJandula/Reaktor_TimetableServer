@@ -20,8 +20,6 @@ import es.iesjandula.reaktor.timetable_server.utils.ParseoPuntos;
 @ComponentScan( basePackages = "es.iesjandula.reaktor.timetable_server")
 public class TimetableApplication implements CommandLineRunner
 {
-	
-	
 	@Autowired
 	private ParseoPuntos parseoPuntos;
 	/**
@@ -34,8 +32,9 @@ public class TimetableApplication implements CommandLineRunner
 	}
 
 	@Override
-	public void run(String... args) throws Exception {
-		String ruta = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"puntos.csv";
+	public void run(String... args) throws Exception
+	{
+		String ruta = "src" + File.separator + "main" + File.separator + "resources" + File.separator + "puntos.csv";
 		File file = new File(ruta);
 		Scanner scanner = new Scanner(file);
 		this.parseoPuntos.parseoPuntos(scanner);
