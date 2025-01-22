@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -21,9 +22,11 @@ public class GrupoEntity implements Comparable<GrupoEntity>
 	private String numIntGr;
 	
 	/** Attribute abreviatura */
+	@Column
 	private String abreviatura;
 	
 	/** Attribute nombre */
+	@Column
 	private String nombre;
 		
 	@Override

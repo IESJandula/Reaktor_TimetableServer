@@ -1,6 +1,5 @@
 package es.iesjandula.reaktor.timetable_server.rest;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
-import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
 import es.iesjandula.reaktor.timetable_server.models.entities.AulaPlanoEntity;
@@ -22,7 +20,6 @@ import es.iesjandula.reaktor.timetable_server.models.entities.StudentsEntity;
 import es.iesjandula.reaktor.timetable_server.repository.IAulaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
 import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
-import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
 import es.iesjandula.reaktor.timetable_server.utils.TimeTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,13 +42,6 @@ public class TimetableRestMaps {
 	
 	/** Lista de los planos de las aulas */
 	private List<AulaPlanoEntity> aulas;
-
-
-
-
-
-
-
 
 	// --------------------------- JAYDEE
 

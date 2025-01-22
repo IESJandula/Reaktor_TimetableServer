@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PuntosConvivenciaAlumnoCursoId implements Serializable
 {
+	private static final long serialVersionUID = -3829076593351286453L;
+
 	/**Referencia a la clave primaria id de la entidad alumno */
 	private Long alumnoId;
 	

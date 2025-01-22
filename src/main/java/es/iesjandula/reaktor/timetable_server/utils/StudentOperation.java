@@ -41,15 +41,19 @@ public class StudentOperation
 			//Operaciones con el nombre del alumno
 			splitDatos[0] = splitDatos[0].substring(1);
 			splitDatos[0] = splitDatos[0].trim();
+			
 			//Operaciones con el apellido del alumno
 			splitDatos[1] = splitDatos[1].trim();
 			splitDatos[1] = splitDatos[1].substring(0, splitDatos[1].length()-1);
+			
 			//Operaciones con el curso del alumno
 			splitDatos[2] = splitDatos[2].trim();
 			splitDatos[2] = splitDatos[2].substring(1, splitDatos[2].length()-1);
+			
 			//Operaciones con el curso academico 
 			splitDatos[3] = splitDatos[3].trim();
 			splitDatos[3] = splitDatos[3].substring(1, splitDatos[3].length()-1);
+			
 			//Operaciones con el primer apellido del tutor en caso de que este vacio lo establecemos a nulo
 			if(!splitDatos[4].isEmpty() && !splitDatos[4].equals("\"\""))
 			{
@@ -60,6 +64,7 @@ public class StudentOperation
 			{
 				splitDatos[4] = null;
 			}
+			
 			//Operaciones con el segundo apellido primer del tutor en caso de que este vacio lo establecemos a nulo
 			if(!splitDatos[5].isEmpty() && !splitDatos[5].equals("\"\""))
 			{
@@ -70,6 +75,7 @@ public class StudentOperation
 			{
 				splitDatos[5] = null;
 			}
+			
 			//Operaciones con el nombre del primer tutor en caso de que este vacio lo establecemos a nulo
 			if(!splitDatos[6].isEmpty() && !splitDatos[6].equals("\"\""))
 			{
@@ -80,6 +86,7 @@ public class StudentOperation
 			{
 				splitDatos[6] = null;
 			}
+			
 			//Operaciones con el telefono del primer tutor en caso de que este vacio lo establecemos a nulo
 			if(!splitDatos[7].isEmpty() && !splitDatos[7].equals("\"\""))
 			{
@@ -90,6 +97,7 @@ public class StudentOperation
 			{
 				splitDatos[7] = null;
 			}
+			
 			//Operaciones con el correo electronico del primer tutor
 			if(!splitDatos[8].isEmpty() && !splitDatos[8].equals("\"\"\r"))
 			{

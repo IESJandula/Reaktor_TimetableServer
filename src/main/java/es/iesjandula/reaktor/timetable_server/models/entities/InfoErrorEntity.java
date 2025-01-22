@@ -25,6 +25,7 @@ public class InfoErrorEntity
 	    @Column(nullable = false)  // es obligatorio
 	    private String infoError;
 
+	    @Column
 	    private Boolean wait;
 
 	    @Column(nullable = false)

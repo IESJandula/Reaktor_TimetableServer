@@ -12,6 +12,7 @@ public class CursoId
 {
 	/**Id que corresponde al nombre del curso */
 	private String nombre;
+	
 	/**Año academico del curso  */
 	private String anioAcademico;
 }

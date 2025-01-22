@@ -69,9 +69,7 @@ public class TimetableRestTeachers {
 	@Autowired
 	ApplicationPdf applicationPdf;
 
-
 	// --------------------------- JAYDEE
-
 
 	@Autowired
 	private IProfesorRepository profesorRepo;
@@ -82,7 +80,6 @@ public class TimetableRestTeachers {
 	@Autowired
 	private IActividadRepository actividadRepo;
 
-	
 	/**
 	 * Recupera un listado de profesoresDTO a partir de una llamada al repositorio.
 	 * 
@@ -411,8 +408,6 @@ public class TimetableRestTeachers {
 	}
 	
 
-
-
 	@RequestMapping(value = "/get/tramos", produces = "application/json")
 	public ResponseEntity<?> getNumTramos()
 	{
@@ -430,7 +425,6 @@ public class TimetableRestTeachers {
 		}
 	}
 	
-
 
 	/**
 	 * Method getListHours
@@ -627,13 +621,6 @@ public class TimetableRestTeachers {
 			return ResponseEntity.status(500).body(horariosError);
 		}
 	}
-	
-	
-
-
-	
-	
-	
 	
 	//-----methods-------
 	

@@ -338,7 +338,8 @@ public class JPAOperations
 		Date date = new Date();
 		PuntosConvivenciaAlumnoCursoId puntosConvivenciaId = new PuntosConvivenciaAlumnoCursoId(alumnoId,cursoId,puntoId,date);
 		this.sancionRepo.save(new PuntosConvivenciaAlumnoCurso(puntosConvivenciaId, studentsEntity,
-				new Curso(cursoId),new PuntosConvivencia(puntoId,points.getPoints(),points.getDescription()))); 
+							  new Curso(cursoId),
+							  new PuntosConvivencia(puntoId,points.getPoints(),points.getDescription()))); 
 		
 	}
 	

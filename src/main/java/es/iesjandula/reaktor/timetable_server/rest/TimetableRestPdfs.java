@@ -54,14 +54,10 @@ public class TimetableRestPdfs {
 	@Autowired
 	private IStudentsRepository iStudentsRepository;
 
-
-
 	// --------------------------- JAYDEE
-
+	
 	@Autowired
 	private IGrupoRepository grupoRepo;
-
-
 
 	@Autowired
 	private IProfesorRepository profesorRepo;
@@ -71,10 +67,6 @@ public class TimetableRestPdfs {
 
 	@Autowired
 	private IActividadRepository actividadRepo;
-
-
-
-	
 
 	/**
 	 * Method getSchedulePdf

@@ -72,33 +72,21 @@ public class TimetableRestStudents {
 	/** Lista de los planos de las aulas */
 	private List<AulaPlanoEntity> aulas;
 
-
-
-
-
-
-
-
 	// --------------------------- JAYDEE
-
 
 	@Autowired
 	private IGrupoRepository grupoRepo;
 
-
-
 	// ---------------Este es para getListPointsCoexistence
+	
 	@Autowired
 	private IActitudePointsRepository iActitudePointsRepo;
-
 
 	@Autowired
 	private IStudentsRepository iStudentsRepo;
 
-
 	public TimetableRestStudents()
 	{
-
 		this.studentOperation = new StudentOperation();
 		this.students = new LinkedList<Student>();
 	}

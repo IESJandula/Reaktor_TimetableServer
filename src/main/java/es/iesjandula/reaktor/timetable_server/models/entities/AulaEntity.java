@@ -22,9 +22,11 @@ public class AulaEntity
 	private String numIntAu;
 	
 	/** Attribute abreviatura*/
+	@Column
 	private String abreviatura;
 	
 	/** Attribute nombre*/
+	@Column
 	private String nombre;
 	
 	/** Atributo de planta**/

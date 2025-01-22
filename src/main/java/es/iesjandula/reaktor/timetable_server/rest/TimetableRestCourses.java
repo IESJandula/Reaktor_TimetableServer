@@ -1,6 +1,5 @@
 package es.iesjandula.reaktor.timetable_server.rest;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,14 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 import es.iesjandula.reaktor.timetable_server.exceptions.HorariosError;
 import es.iesjandula.reaktor.timetable_server.models.Classroom;
 import es.iesjandula.reaktor.timetable_server.models.Course;
-import es.iesjandula.reaktor.timetable_server.models.Student;
 import es.iesjandula.reaktor.timetable_server.models.entities.AulaEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Aula;
 import es.iesjandula.reaktor.timetable_server.models.parse.Grupo;
 import es.iesjandula.reaktor.timetable_server.repository.IAulaRepository;
 import es.iesjandula.reaktor.timetable_server.repository.IGrupoRepository;
 import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
-import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
 import es.iesjandula.reaktor.timetable_server.utils.TimeTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,19 +37,13 @@ public class TimetableRestCourses {
 	@Autowired
 	ApplicationPdf applicationPdf;
 
-
-
-
 	// --------------------------- JAYDEE
-
 
 	@Autowired
 	private IGrupoRepository grupoRepo;
 
 	@Autowired
 	private IAulaRepository aulaRepo;
-
-
 
 
 	/**

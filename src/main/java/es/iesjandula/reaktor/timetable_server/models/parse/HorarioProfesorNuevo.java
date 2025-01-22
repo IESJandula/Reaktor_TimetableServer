@@ -10,11 +10,19 @@ import lombok.NoArgsConstructor;
 public class HorarioProfesorNuevo
 {
 	String nombreProfesor;
+	
 	String primerApellido;
+	
 	String segundoApellido;
+	
 	String asignatura;
+	
 	String diaSemanal;
+	
 	String horaInicio;
+	
 	String horaFin;
+	
 	String nombreAula;
+	
 }

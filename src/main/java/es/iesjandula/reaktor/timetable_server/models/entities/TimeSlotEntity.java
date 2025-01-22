@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -20,10 +21,13 @@ public class TimeSlotEntity
 	@Id
 	private String numTr;
 	
+	@Column
 	private String dayNumber;
 	
+	@Column
 	private String  startHour; 
 	
+	@Column
 	private String endHour;	 
 	
 }

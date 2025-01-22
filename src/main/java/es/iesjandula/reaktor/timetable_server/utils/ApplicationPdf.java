@@ -771,8 +771,7 @@ public class ApplicationPdf
 						
 						// --- FINALLY PUT THE CELL ON THE TABLE AND REPEAT WITH ALL ACTIVIDADES ---
 						pdfTable.addCell(temporalData);
-						
-						
+							
 					}
 					pdfTable.completeRow();
 				}

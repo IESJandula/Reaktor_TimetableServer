@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import es.iesjandula.reaktor.timetable_server.models.entities.AsignaturaEntity;
-import es.iesjandula.reaktor.timetable_server.models.entities.ProfesorEntity;
 import es.iesjandula.reaktor.timetable_server.models.parse.Asignatura;
 
 @Repository

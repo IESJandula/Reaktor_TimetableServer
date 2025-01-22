@@ -1,6 +1,5 @@
 package es.iesjandula.reaktor.timetable_server.rest;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +19,6 @@ import es.iesjandula.reaktor.timetable_server.repository.IActitudePointsReposito
 import es.iesjandula.reaktor.timetable_server.repository.IStudentsRepository;
 import es.iesjandula.reaktor.timetable_server.utils.ApplicationPdf;
 import es.iesjandula.reaktor.timetable_server.utils.JPAOperations;
-import es.iesjandula.reaktor.timetable_server.utils.StudentOperation;
 import es.iesjandula.reaktor.timetable_server.utils.TimeTableUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,16 +44,6 @@ public class TimetableRestCoexistence {
 	
 	@Autowired
 	private IStudentsRepository iStudentsRepository;
-
-
-
-
-
-
-
-
-
-	// --------------------------- JAYDEE
 
 
 	// ---------------Este es para getListPointsCoexistence

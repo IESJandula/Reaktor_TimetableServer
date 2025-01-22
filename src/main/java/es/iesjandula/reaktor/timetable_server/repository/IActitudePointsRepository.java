@@ -17,7 +17,7 @@ public interface IActitudePointsRepository extends JpaRepository<ActitudePointsE
     @Query("SELECT new es.iesjandula.reaktor.timetable_server.models.ActitudePoints(a.points, a.description) FROM ActitudePointsEntity a")
     List<ActitudePoints> findAllActitudePoints();
     
- // Método para encontrar puntos por valor y descripción
+    // Método para encontrar puntos por valor y descripción
     Optional<ActitudePoints> findByPointsAndDescription(int points, String description);
 
     @Query("SELECT a.valor FROM PuntosConvivencia a")

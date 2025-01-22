@@ -6,5 +6,5 @@ package es.iesjandula.reaktor.timetable_server.models;
  */
 public enum Rol
 {
-	docente,administrador,conserje
+	docente, administrador, conserje
 }

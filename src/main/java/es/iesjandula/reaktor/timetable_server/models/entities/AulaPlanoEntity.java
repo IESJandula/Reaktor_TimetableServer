@@ -1,5 +1,6 @@
 package es.iesjandula.reaktor.timetable_server.models.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -22,21 +23,27 @@ public class AulaPlanoEntity
     private Long id;
 
     /** Largo del aula */
+    @Column
     private double height;
 
     /** Ancho del aula */
+    @Column
     private double width;
 
     /** Medida en el eje y */
+    @Column
     private double top;
 
     /** Medida en el eje x derecho */
+    @Column
     private double rightSide;
 
     /** Medida en el eje x izquierdo */
+    @Column
     private double leftSide;
 
     /** Planta en la que se encuentra el aula */
+    @Column
     private String planta;
     
     /** Aula que referencia */

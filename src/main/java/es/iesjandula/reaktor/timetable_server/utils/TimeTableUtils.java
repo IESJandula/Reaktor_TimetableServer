@@ -256,7 +256,8 @@ public class TimeTableUtils
 	 * ya que luego en el frontend saldran datos erroneos
 	 * @return lista de aulas para los planos en el front
 	 */
-	public List<AulaPlano> parseAulasPlano(byte[] data) throws HorariosError {
+	public List<AulaPlano> parseAulasPlano(byte[] data) throws HorariosError 
+	{
 	    List<AulaPlano> aulas = new LinkedList<AulaPlano>();
 
 	    // Transformamos los datos a string
@@ -266,18 +267,21 @@ public class TimeTableUtils
 	    String[] splitContent = content.split("\n");
 	    
 	    // Comprobamos que la cabecera y los datos estén bien formados
-	    if (!splitContent[0].trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) {
+	    if (!splitContent[0].trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) 
+	    {
 	        throw new HorariosError(406, "Los datos del fichero son incorrectos. La cabecera del csv debe ser height,width,top,right,left,planta,numIntAu,abreviatura,nombre");
 	    } else {
 	        for (String rawData : splitContent) {
 	            // Nos saltamos la cabecera
-	            if (rawData.trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) {
+	            if (rawData.trim().equals("height,width,top,right,left,planta,numIntAu,abreviatura,nombre")) 
+	            {
 	                continue;
 	            } else {
 	                // Separamos los datos por ","
 	                String[] attributes = rawData.split(",");
 	                
-	                try {
+	                try 
+	                {
 	                    // Creamos los atributos y lo añadimos a la lista
 	                    double height = Double.parseDouble(attributes[0].trim());
 	                    double width = Double.parseDouble(attributes[1].trim());
@@ -290,11 +294,13 @@ public class TimeTableUtils
 	                    AulaPlano aulaPlano = new AulaPlano(height, width, top, right, left, attributes[5].trim(), aula);
 
 	                    aulas.add(aulaPlano);  // Añadimos el nuevo plano
-	                } catch (NumberFormatException exception) {
+	                } catch (NumberFormatException exception) 
+	                {
 	                    String message = "Las medidas están mal formadas";
 	                    log.error(message, exception);
 	                    throw new HorariosError(406, message, exception);
-	                } catch (NullPointerException exception) {
+	                } catch (NullPointerException exception) 
+	                {
 	                    String message = "Hay datos que vienen vacíos";
 	                    log.error(message, exception);
 	                    throw new HorariosError(406, message, exception);
@@ -451,10 +457,12 @@ public class TimeTableUtils
 	@Autowired
 	private IStudentsRepository studentRepo;
 
-	public List<Student> getAlumnosAulaNow(List<Grupo> grupos, List<Student> alumnos) throws HorariosError {
+	public List<Student> getAlumnosAulaNow(List<Grupo> grupos, List<Student> alumnos) throws HorariosError 
+	{
 	    List<Student> alumnosAula = new LinkedList<>();
 
-	    for (Grupo grupo : grupos) {
+	    for (Grupo grupo : grupos) 
+	    {
 	        // Para el caso de Bachillerato, aplicar un filtro especial
 	        String grupoEspecial = this.getAlumnosBach(grupo.getNombre());
 
@@ -462,10 +470,12 @@ public class TimeTableUtils
 	        grupoEspecial = grupoEspecial.isEmpty() ? this.getSpecialGroup(grupo.getNombre()) : grupoEspecial;
 
 	        List<StudentsEntity> studentsEntities;
-	        if (grupoEspecial.isEmpty()) {
+	        if (grupoEspecial.isEmpty()) 
+	        {
 	            // Construir el curso del grupo
 	            String grade = getGroupGrade(grupo.getNombre());
-	            if (grade.isEmpty()) {
+	            if (grade.isEmpty()) 
+	            {
 	                throw new HorariosError(400, "El curso seleccionado " + grupo.getNombre() + " no coincide con ningún curso de los alumnos");
 	            }
 
@@ -474,17 +484,20 @@ public class TimeTableUtils
 
 	            // Formar el curso completo
 	            String completeGrade = grade + " " + grupoAlumno;
-	            if (letraGrupo != null && !letraGrupo.isEmpty()) {
+	            if (letraGrupo != null && !letraGrupo.isEmpty()) 
+	            {
 	                completeGrade = completeGrade + " " + letraGrupo;
 	            }
 
 	            studentsEntities = studentRepo.findByCourse(completeGrade);
-	        } else {
+	        } else 
+	        {
 	            studentsEntities = studentRepo.findByCourse(grupoEspecial);
 	        }
 
 	        // Convertir las entidades de StudentsEntity a Student usando el constructor Student(StudentsEntity entity)
-	        for (StudentsEntity entity : studentsEntities) {
+	        for (StudentsEntity entity : studentsEntities) 
+	        {
 	            alumnosAula.add(new Student(entity));  // Aquí se usa el constructor que ya tienes
 	        }
 	    }
@@ -681,7 +694,8 @@ public class TimeTableUtils
 	            String grade = getGroupGrade(grupo.getNombre());
 
 	            // Si no podemos determinar el grado, lanzamos un error porque el grupo no es válido.
-	            if (grade.isEmpty()) {
+	            if (grade.isEmpty()) 
+	            {
 	                throw new HorariosError(400, "El curso seleccionado " + group + " no coincide con ningún curso válido");
 	            }
 

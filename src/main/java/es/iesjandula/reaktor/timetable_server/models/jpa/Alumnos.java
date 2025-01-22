@@ -18,9 +18,9 @@ import lombok.NoArgsConstructor;
 public class Alumnos 
 {
 	/**Id del alumno autoincremental */
-	@Id
 	//GeneratedValue hace que el id vaya incrementandose uno a uno
 	//GenerationType.Identity indica que el valor sera generado por la base de datos
+	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "alumno_id")
 	private Long alumnoId;
